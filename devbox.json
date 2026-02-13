@@ -1,0 +1,15 @@
+{
+  "$schema": "https://devbox.schema.devbox.ai/latest/schema.json",
+  "name": "daily-pose",
+  "description": "매일 동일한 포즈로 사진을 찍어 타임랩스로 변환하는 웹 앱",
+  "packages": {
+    "nodejs-24_x": "^24.0.0",
+    "npm": "^10.0.0"
+  },
+  "shell": {
+    "init_hook": [
+      "echo '📸 Daily Pose - Devbox 환경 로드됨'",
+      "echo '설치 완료 후 npm run dev로 시작하세요'"
+    ]
+  }
+}
