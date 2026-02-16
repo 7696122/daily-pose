@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useAppStore } from './stores/useAppStore';
 import { CameraPage, GalleryPage } from './components/organisms';
+import { InstallButton } from './components/molecules/InstallButton';
 import { getAllPhotos } from './lib/indexedDB';
 
 function App() {
@@ -21,10 +22,9 @@ function App() {
   }, [setPhotos]);
 
   return (
-    <div className="min-h-screen bg-gray-950 text-white">
-      <div className="container mx-auto px-4 py-6 h-screen max-h-screen">
-        {currentView === 'camera' ? <CameraPage /> : <GalleryPage />}
-      </div>
+    <div className="h-dvh bg-gray-950 text-white overflow-hidden">
+      <InstallButton />
+      {currentView === 'camera' ? <CameraPage /> : <GalleryPage />}
     </div>
   );
 }

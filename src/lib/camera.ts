@@ -1,16 +1,16 @@
 // 카메라 스트림 시작
 export const startCamera = async (
-  constraints: MediaStreamConstraints = {
-    video: {
-      facingMode: 'user', // 모바일에서 전면 카메라 사용
-      width: { ideal: 1920 },
-      height: { ideal: 1080 },
-    },
-    audio: false,
-  }
+  facingMode: 'user' | 'environment' = 'user'
 ): Promise<MediaStream> => {
   try {
-    const stream = await navigator.mediaDevices.getUserMedia(constraints);
+    const stream = await navigator.mediaDevices.getUserMedia({
+      video: {
+        facingMode,
+        width: { ideal: 1920 },
+        height: { ideal: 1080 },
+      },
+      audio: false,
+    });
     return stream;
   } catch (error) {
     console.error('카메라 접근 실패:', error);

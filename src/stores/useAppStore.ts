@@ -11,6 +11,8 @@ interface AppStore {
   currentView: 'camera' | 'gallery';
   isRecording: boolean;
   isTimelapsePlaying: boolean;
+  facingMode: 'user' | 'environment';
+  aspectRatio: 'video' | 'square' | 'portrait' | 'fullscreen';
 
   // 액션
   addPhoto: (photo: Photo) => void;
@@ -23,6 +25,8 @@ interface AppStore {
   setRecording: (recording: boolean) => void;
   setTimelapsePlaying: (playing: boolean) => void;
   deletePhoto: (id: string) => void;
+  setFacingMode: (mode: 'user' | 'environment') => void;
+  setAspectRatio: (ratio: 'video' | 'square' | 'portrait' | 'fullscreen') => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -35,6 +39,8 @@ export const useAppStore = create<AppStore>((set) => ({
   currentView: 'camera',
   isRecording: false,
   isTimelapsePlaying: false,
+  facingMode: 'user',
+  aspectRatio: 'video',
 
   // 액션 구현
   addPhoto: (photo) =>
@@ -62,4 +68,8 @@ export const useAppStore = create<AppStore>((set) => ({
     set((state) => ({
       photos: state.photos.filter((photo) => photo.id !== id),
     })),
+
+  setFacingMode: (mode) => set({ facingMode: mode }),
+
+  setAspectRatio: (ratio) => set({ aspectRatio: ratio }),
 }));

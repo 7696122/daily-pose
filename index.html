@@ -1,13 +1,50 @@
 <!doctype html>
-<html lang="en">
+<html lang="ko">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>daily-pose</title>
+    <link rel="icon" type="image/png" sizes="192x192" href="/icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/icon-512.png" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="description" content="매일 동일한 포즈로 사진을 찍어 변화를 기록하는 앱" />
+    <title>Daily Pose</title>
+
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS 메타 태그 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="DailyPose" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
+
+    <!-- Android/Chrome 메타 태그 -->
+    <meta name="theme-color" content="#000000" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="DailyPose" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // 서비스 워커 등록
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js', {
+            scope: '/'
+          }).then((registration) => {
+            console.log('SW registered:', registration);
+
+            // PWA 설치 프롬프트 테스트
+            window.addEventListener('beforeinstallprompt', (e) => {
+              console.log('beforeinstallprompt fired');
+              e.preventDefault();
+              // 나중에 설치 프롬프트를 표시할 수 있음
+            });
+          }).catch((registrationError) => {
+            console.log('SW registration failed:', registrationError);
+          });
+        });
+      }
+    </script>
   </body>
 </html>
