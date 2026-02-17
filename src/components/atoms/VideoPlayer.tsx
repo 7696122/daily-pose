@@ -7,6 +7,7 @@ interface VideoPlayerProps {
   autoPlay?: boolean;
   playsInline?: boolean;
   facingMode?: 'user' | 'environment';
+  objectFit?: 'cover' | 'contain';
 }
 
 export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
@@ -16,6 +17,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
   autoPlay = true,
   playsInline = true,
   facingMode = 'user',
+  objectFit = 'cover',
 }, ref) => {
   const internalRef = useRef<HTMLVideoElement>(null);
   const videoRef = (ref as React.RefObject<HTMLVideoElement>) || internalRef;
@@ -37,7 +39,7 @@ export const VideoPlayer = forwardRef<HTMLVideoElement, VideoPlayerProps>(({
       autoPlay={autoPlay}
       playsInline={playsInline}
       muted={muted}
-      className={`w-full h-full object-cover rounded-lg ${facingMode === 'user' ? 'scale-x-[-1]' : ''} ${className}`}
+      className={`w-full h-full object-${objectFit} ${facingMode === 'user' ? 'scale-x-[-1]' : ''} ${className}`}
     />
   );
 });

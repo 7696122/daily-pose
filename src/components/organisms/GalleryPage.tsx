@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Camera, Download, Play, Trash2 } from 'lucide-react';
+import { Camera, Download, Play, Trash2, Settings, X } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import type { Photo } from '../../types';
 import { deletePhoto, clearDatabase } from '../../lib/indexedDB';
 import { downloadTimelapse } from '../../lib/timelapse';
-import { Button } from '../atoms';
+import { IconButton } from '../atoms';
 import { GalleryGrid, TimelapsePlayer } from '../molecules';
 
 export const GalleryPage = () => {
@@ -16,8 +16,6 @@ export const GalleryPage = () => {
 
   // 사진 삭제
   const handleDeletePhoto = async (id: string) => {
-    if (!confirm('이 사진을 삭제하시겠습니까?')) return;
-
     try {
       await deletePhoto(id);
       deletePhotoFromStore(id);
@@ -54,17 +52,14 @@ export const GalleryPage = () => {
 
     setIsGenerating(true);
     try {
-      // 간단한 버전: Canvas + MediaRecorder
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) throw new Error('캔버스를 생성할 수 없습니다.');
 
-      // 첫 번째 사진으로 크기 설정
       const firstImage = await loadImage(photos[0].dataUrl);
       canvas.width = firstImage.width;
       canvas.height = firstImage.height;
 
-      // MediaRecorder 설정
       const stream = canvas.captureStream(10);
       const mediaRecorder = new MediaRecorder(stream, {
         mimeType: 'video/webm;codecs=vp9',
@@ -83,7 +78,6 @@ export const GalleryPage = () => {
 
       mediaRecorder.start();
 
-      // 각 프레임 그리기 (초당 10프레임)
       const frameDuration = 100;
       for (const photo of photos) {
         const img = await loadImage(photo.dataUrl);
@@ -110,64 +104,46 @@ export const GalleryPage = () => {
 
   return (
     <>
-      {/* 타임랩스 플레이어 오버레이 */}
       {isPlayingTimelapse && (
         <TimelapsePlayer photos={photos} onClose={() => setIsPlayingTimelapse(false)} />
       )}
 
-      <div className="flex flex-col h-full">
-        {/* 헤더 */}
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-2xl font-bold">🖼️ 갤러리</h1>
-            <p className="text-gray-400 text-sm">{photos.length}장의 사진</p>
-          </div>
+      <div className="flex flex-col h-full bg-[#0a0a0a]">
+        {/* iOS 스타일 헤더 */}
+        <div className="flex items-center justify-between px-4 py-3 bg-black/50 backdrop-blur-lg border-b border-white/10">
+          <h1 className="text-3xl font-bold">갤러리</h1>
           <div className="flex items-center gap-2">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={() => setCurrentView('camera')}
-            >
-              <Camera className="w-4 h-4 mr-2" />
-              카메라
-            </Button>
-            {photos.length >= 2 && (
-              <>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setIsPlayingTimelapse(true)}
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  타임랩스
-                </Button>
-                <Button
-                  variant="primary"
-                  size="sm"
-                  onClick={handleDownloadTimelapse}
-                  disabled={isGenerating}
-                >
-                  <Download className="w-4 h-4 mr-2" />
-                  {isGenerating ? '생성 중...' : '다운로드'}
-                </Button>
-              </>
-            )}
             {photos.length > 0 && (
-              <Button
-                variant="danger"
+              <IconButton
+                variant="ghost"
                 size="sm"
                 onClick={handleDeleteAll}
                 disabled={isDeletingAll}
+                aria-label="전체 삭제"
               >
-                <Trash2 className="w-4 h-4 mr-2" />
-                전체 삭제
-              </Button>
+                <Trash2 />
+              </IconButton>
             )}
+            <IconButton
+              variant="ghost"
+              size="sm"
+              onClick={() => setCurrentView('settings')}
+              aria-label="설정"
+            >
+              <Settings />
+            </IconButton>
           </div>
         </div>
 
+        {/* 카운트 배지 */}
+        {photos.length > 0 && (
+          <div className="px-4 py-2">
+            <p className="text-gray-500 text-sm">{photos.length}장의 사진</p>
+          </div>
+        )}
+
         {/* 사진 그리드 */}
-        <div className="flex-1 overflow-auto">
+        <div className="flex-1 overflow-auto px-4">
           <GalleryGrid
             photos={photos}
             selectedId={selectedPhoto?.id || null}
@@ -176,32 +152,75 @@ export const GalleryPage = () => {
           />
         </div>
 
-        {/* 선택된 사진 미리보기 */}
+        {/* 하단 액션 바 */}
+        <div className="border-t border-white/10 bg-black/50 backdrop-blur-lg">
+          <div className="flex items-center justify-around py-safe-area-inset-top">
+            <button
+              onClick={() => setCurrentView('camera')}
+              className="flex flex-col items-center gap-1 py-3 px-6 text-primary-500 active:opacity-60"
+            >
+              <Camera className="w-6 h-6" />
+              <span className="text-xs">카메라</span>
+            </button>
+
+            {photos.length >= 2 && (
+              <>
+                <button
+                  onClick={() => setIsPlayingTimelapse(true)}
+                  className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60"
+                >
+                  <Play className="w-6 h-6" />
+                  <span className="text-xs">재생</span>
+                </button>
+
+                <button
+                  onClick={handleDownloadTimelapse}
+                  disabled={isGenerating}
+                  className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60 disabled:opacity-50"
+                >
+                  <Download className="w-6 h-6" />
+                  <span className="text-xs">{isGenerating ? '생성 중' : '다운로드'}</span>
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+
+        {/* 선택된 사진 미리보기 시트 */}
         {selectedPhoto && (
-          <div className="fixed bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-4">
-            <div className="flex items-center gap-4 max-w-4xl mx-auto">
-              <img
-                src={selectedPhoto.dataUrl}
-                alt={selectedPhoto.date}
-                className="w-20 h-20 object-cover rounded-lg"
-              />
-              <div className="flex-1">
-                <p className="text-white font-medium">{selectedPhoto.date}</p>
-                <p className="text-gray-400 text-sm">
-                  {new Date(selectedPhoto.timestamp).toLocaleDateString('ko-KR', {
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  })}
-                </p>
+          <div className="fixed inset-0 z-50 flex items-end">
+            <div
+              className="absolute inset-0 bg-black/60"
+              onClick={() => setSelectedPhoto(null)}
+            />
+            <div className="relative bg-gray-900 w-full rounded-t-3xl p-6 pb-safe-area-inset-bottom transform transition-transform">
+              {/* 핸들 */}
+              <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto mb-6" />
+
+              <div className="flex items-center gap-4">
+                <img
+                  src={selectedPhoto.dataUrl}
+                  alt={selectedPhoto.date}
+                  className="w-24 h-14 object-cover rounded-2xl"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="text-white font-medium text-lg truncate">{selectedPhoto.date}</p>
+                  <p className="text-gray-400 text-sm">
+                    {new Date(selectedPhoto.timestamp).toLocaleDateString('ko-KR', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })}
+                  </p>
+                </div>
+                <IconButton
+                  variant="ghost"
+                  onClick={() => setSelectedPhoto(null)}
+                  aria-label="닫기"
+                >
+                  <X />
+                </IconButton>
               </div>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={() => setSelectedPhoto(null)}
-              >
-                닫기
-              </Button>
             </div>
           </div>
         )}

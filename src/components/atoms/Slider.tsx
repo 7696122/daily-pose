@@ -38,7 +38,7 @@ export const Slider = ({
         step={step}
         value={value}
         onChange={handleChange}
-        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500"
+        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-500 hover:accent-primary-400"
       />
     </div>
   );

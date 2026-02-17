@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
-import type { Photo } from '../../types';
+import { Play, Pause } from 'lucide-react';
+import type { Photo } from '../../core/types';
+import { IconButton, Button } from '../atoms';
 
 interface TimelapsePlayerProps {
-  photos: Photo[];
+  photos: readonly Photo[];
   onClose: () => void;
 }
 
@@ -12,8 +14,10 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
   const [fps, setFps] = useState(10);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const play = () => {
-    setIsPlaying(true);
+  const startInterval = () => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current);
+    }
     intervalRef.current = setInterval(() => {
       setCurrentIndex((prev) => {
         if (prev >= photos.length - 1) {
@@ -25,6 +29,11 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
     }, 1000 / fps);
   };
 
+  const play = () => {
+    setIsPlaying(true);
+    startInterval();
+  };
+
   const pause = () => {
     setIsPlaying(false);
     if (intervalRef.current) {
@@ -32,6 +41,18 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
       intervalRef.current = null;
     }
   };
+
+  // fps 변경 시 interval 재생성
+  useEffect(() => {
+    if (isPlaying) {
+      startInterval();
+    }
+    return () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+      }
+    };
+  }, [fps]);
 
   useEffect(() => {
     return () => {
@@ -56,15 +77,16 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
       <div className="max-w-4xl w-full">
         {/* 닫기 버튼 */}
         <div className="flex justify-end mb-4">
-          <button
+          <Button
+            variant="secondary"
+            size="sm"
             onClick={onClose}
-            className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-2 rounded-lg"
           >
             닫기
-          </button>
+          </Button>
         </div>
 
-        {/* 메인 이미지 */}
+        {/* 메인 이미지 - 항상 16:9 비율 */}
         <div className="relative aspect-video bg-gray-900 rounded-lg overflow-hidden">
           <img
             src={currentPhoto.dataUrl}
@@ -92,34 +114,20 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
                 setCurrentIndex(Number(e.target.value));
                 if (isPlaying) pause();
               }}
-              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-primary-500"
             />
           </div>
 
           {/* 재생 컨트롤 */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              {!isPlaying ? (
-                <button
-                  onClick={play}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full"
-                  aria-label="재생"
-                >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M8 5v14l11-7z" />
-                  </svg>
-                </button>
-              ) : (
-                <button
-                  onClick={pause}
-                  className="bg-blue-600 hover:bg-blue-700 text-white p-3 rounded-full"
-                  aria-label="일시정지"
-                >
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z" />
-                  </svg>
-                </button>
-              )}
+              <IconButton
+                variant="primary"
+                onClick={isPlaying ? pause : play}
+                aria-label={isPlaying ? '일시정지' : '재생'}
+              >
+                {isPlaying ? <Pause /> : <Play />}
+              </IconButton>
             </div>
 
             <div className="flex items-center gap-4">

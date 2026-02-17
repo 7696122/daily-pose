@@ -1,52 +1,91 @@
-import type { LucideIcon } from 'lucide-react';
+import type { ReactNode, MouseEventHandler } from 'react';
 
 interface IconButtonProps {
-  icon: LucideIcon;
-  onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'ghost';
+  children: ReactNode;
+  onClick?: MouseEventHandler<HTMLButtonElement>;
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost' | 'glass';
   size?: 'sm' | 'md' | 'lg';
   disabled?: boolean;
-  ariaLabel?: string;
+  type?: 'button' | 'submit' | 'reset';
   className?: string;
+  'aria-label'?: string;
+  badge?: number | string;
 }
 
 export const IconButton = ({
-  icon: Icon,
+  children,
   onClick,
-  variant = 'secondary',
+  variant = 'glass',
   size = 'md',
   disabled = false,
-  ariaLabel,
+  type = 'button',
   className = '',
+  'aria-label': ariaLabel,
+  badge,
 }: IconButtonProps) => {
-  const baseStyles = 'rounded-full transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseStyles = `
+    relative rounded-full
+    flex items-center justify-center
+    transition-all duration-150 ease-out
+    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]
+    active:scale-95 active:transition-transform
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+    select-none touch-manipulation
+  `;
 
-  const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed',
-    secondary: 'bg-gray-700 hover:bg-gray-600 text-white focus:ring-gray-500 disabled:bg-gray-800 disabled:cursor-not-allowed',
-    ghost: 'bg-transparent hover:bg-gray-700 text-white focus:ring-gray-500 disabled:opacity-50 disabled:cursor-not-allowed',
+  const variantStyles: Record<string, string> = {
+    primary: `
+      bg-gradient-to-br from-primary-500 to-primary-600
+      text-white shadow-lg shadow-primary-500/25
+      hover:shadow-xl hover:shadow-primary-500/35
+      focus:ring-primary-500
+    `,
+    secondary: `
+      bg-gray-800/50 backdrop-blur-sm
+      text-white border border-gray-700
+      shadow-md
+      hover:bg-gray-700/50
+      focus:ring-gray-500
+    `,
+    danger: `
+      bg-gradient-to-br from-red-500 to-red-600
+      text-white shadow-lg shadow-red-500/25
+      hover:shadow-xl hover:shadow-red-500/35
+      focus:ring-red-500
+    `,
+    ghost: `
+      bg-transparent text-gray-300
+      hover:bg-white/10 hover:text-white
+      focus:ring-gray-500
+    `,
+    glass: `
+      bg-white/10 backdrop-blur-sm
+      text-white
+      hover:bg-white/20
+      focus:ring-gray-400
+    `,
   };
 
-  const sizeStyles = {
-    sm: 'p-2',
-    md: 'p-3',
-    lg: 'p-4',
-  };
-
-  const iconSizes = {
-    sm: 16,
-    md: 20,
-    lg: 24,
+  const sizeStyles: Record<string, string> = {
+    sm: 'w-11 h-11 [&_svg]:w-5 [&_svg]:h-5',
+    md: 'w-14 h-14 [&_svg]:w-6 [&_svg]:h-6',
+    lg: 'w-16 h-16 [&_svg]:w-8 [&_svg]:h-8',
   };
 
   return (
     <button
+      type={type}
       onClick={onClick}
       disabled={disabled}
-      aria-label={ariaLabel}
       className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
+      aria-label={ariaLabel}
     >
-      <Icon size={iconSizes[size]} />
+      {children}
+      {badge != null && (
+        <span className="absolute -top-1 -right-1 min-w-[1.25rem] h-5 px-1 bg-primary-500 rounded-full text-xs flex items-center justify-center font-medium">
+          {typeof badge === 'number' && badge > 99 ? '99+' : badge}
+        </span>
+      )}
     </button>
   );
 };

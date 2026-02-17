@@ -8,7 +8,7 @@ interface OverlayCameraProps {
   overlayImage: string | null;
   overlayOpacity: number;
   onOpacityChange: (opacity: number) => void;
-  aspectRatio: AspectRatio;
+  aspectRatio?: AspectRatio;
   className?: string;
   fullscreen?: boolean;
   facingMode?: 'user' | 'environment';
@@ -31,11 +31,18 @@ export const OverlayCamera = forwardRef<HTMLVideoElement, OverlayCameraProps>(({
   facingMode = 'user',
 }, ref) => {
   return (
-    <div className={`relative bg-gray-900 overflow-hidden ${fullscreen ? 'w-full h-full rounded-none' : `w-full rounded-lg ${aspectRatioClasses[aspectRatio]}`} ${className}`}>
+    <div className={`${fullscreen ? 'absolute inset-0' : 'relative'} bg-gray-900 overflow-hidden ${fullscreen ? '' : `w-full rounded-lg ${aspectRatioClasses[aspectRatio]}`} ${className}`}>
       {/* 메인 카메라 피드 */}
       <VideoPlayer stream={stream} className="absolute inset-0" ref={ref} facingMode={facingMode} />
 
-      {/* 가이드 오버레이 */}
+      {/* 비율 가이드 오버레이 (전체 화면일 때만) */}
+      {fullscreen && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className={`${aspectRatioClasses[aspectRatio]} w-full border-2 border-white/30`} />
+        </div>
+      )}
+
+      {/* 가이드 오버레이 (전체 화면이 아닐 때만) */}
       {overlayImage && !fullscreen && (
         <img
           src={overlayImage}

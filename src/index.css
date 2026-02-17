@@ -1,4 +1,6 @@
-@import "tailwindcss";
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
 /* Safe Area Support */
 @supports (padding: env(safe-area-inset-bottom)) {
@@ -8,6 +10,18 @@
 
   .pb-safe-area-inset-bottom {
     padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .pt-safe-area-inset-top {
+    padding-top: env(safe-area-inset-top);
+  }
+
+  .pl-safe-area-inset-left {
+    padding-left: env(safe-area-inset-left);
+  }
+
+  .pr-safe-area-inset-right {
+    padding-right: env(safe-area-inset-right);
   }
 }
 
@@ -24,29 +38,105 @@
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+
+  /* Mobile font size optimization */
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 * {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+
+  /* Prevent tap highlight on mobile */
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
   margin: 0;
   min-width: 320px;
-  height: 100vh;
+  min-height: 100vh;
+  height: 100dvh; /* Dynamic viewport height for mobile */
   overflow: hidden;
+
+  /* Prevent pull-to-refresh and overscroll */
+  overscroll-behavior: none;
+
+  /* Prevent text selection on UI elements */
+  -webkit-user-select: none;
+  user-select: none;
+
+  /* Prevent iOS text size adjustment on orientation change */
+  -webkit-text-size-adjust: 100%;
 }
 
 #root {
   width: 100%;
-  height: 100vh;
+  height: 100%;
+  height: 100dvh;
 }
 
+/* 모바일 최적화 터치 영역 */
+button,
+a,
+[role="button"] {
+  /* iOS 최소 터치 영역: 44x44px */
+  min-height: 44px;
+  min-width: 44px;
+
+  /* Prevent callout on long press */
+  -webkit-touch-callout: none;
+
+  /* Prevent tap highlight */
+  -webkit-tap-highlight-color: transparent;
+
+  /* Prevent text selection */
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* 입력 요소는 텍스트 선택 허용 */
+input,
+textarea,
+select {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* 스크롤 가능 영역 최적화 */
+.scrollable {
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+/* 모바일 전용 헤어라인 제거 */
+.hairline-remove {
+  -webkit-border-before: none;
+  border: none;
+}
+
+/* 다크 모드 지원 */
 @media (prefers-color-scheme: light) {
   :root {
     color: #1a1a1a;
     background-color: #ffffff;
+  }
+}
+
+/* 작은 모바일 화면 최적화 */
+@media (max-width: 375px) {
+  :root {
+    font-size: 14px;
+  }
+}
+
+/* 터치 디바이스에서만 적용 */
+@media (hover: none) and (pointer: coarse) {
+  /* 호버 효과 대신 터치 피드백 사용 */
+  button:active,
+  [role="button"]:active {
+    opacity: 0.7;
+    transform: scale(0.98);
   }
 }

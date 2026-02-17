@@ -1,8 +1,8 @@
 interface ButtonProps {
   children: React.ReactNode;
   onClick?: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
-  size?: 'sm' | 'md' | 'lg';
+  variant?: 'primary' | 'secondary' | 'danger' | 'ghost';
+  size?: 'sm' | 'md' | 'lg' | 'icon';
   disabled?: boolean;
   type?: 'button' | 'submit' | 'reset';
   className?: string;
@@ -17,18 +17,49 @@ export const Button = ({
   type = 'button',
   className = '',
 }: ButtonProps) => {
-  const baseStyles = 'font-medium rounded-lg transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2';
+  const baseStyles = `
+    font-semibold rounded-2xl inline-flex items-center justify-center gap-3 whitespace-nowrap shrink-0
+    transition-all duration-150 ease-out
+    focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-[#0a0a0a]
+    active:scale-95 active:transition-transform
+    disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100
+    select-none
+    touch-manipulation
+  `;
 
   const variantStyles = {
-    primary: 'bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed',
-    secondary: 'bg-gray-700 hover:bg-gray-600 text-white focus:ring-gray-500 disabled:bg-gray-800 disabled:cursor-not-allowed',
-    danger: 'bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 disabled:bg-gray-600 disabled:cursor-not-allowed',
+    primary: `
+      bg-gradient-to-br from-primary-500 to-primary-600
+      text-white shadow-lg shadow-primary-500/25
+      hover:shadow-xl hover:shadow-primary-500/35
+      focus:ring-primary-500
+      dark:from-primary-400 dark:to-primary-500
+    `,
+    secondary: `
+      bg-gray-800/50 backdrop-blur-sm
+      text-white border border-gray-700
+      shadow-md
+      hover:bg-gray-700/50
+      focus:ring-gray-500
+    `,
+    danger: `
+      bg-gradient-to-br from-red-500 to-red-600
+      text-white shadow-lg shadow-red-500/25
+      hover:shadow-xl hover:shadow-red-500/35
+      focus:ring-red-500
+    `,
+    ghost: `
+      bg-transparent text-gray-300
+      hover:bg-white/10 hover:text-white
+      focus:ring-gray-500
+    `,
   };
 
   const sizeStyles = {
-    sm: 'px-3 py-1.5 text-sm',
-    md: 'px-4 py-2 text-base',
-    lg: 'px-6 py-3 text-lg',
+    sm: 'min-h-[44px] px-4 py-2.5 text-sm',
+    md: 'min-h-[52px] px-6 py-3 text-base',
+    lg: 'min-h-[60px] px-8 py-4 text-lg',
+    icon: 'min-h-[44px] min-w-[44px] p-3 aspect-square',
   };
 
   return (

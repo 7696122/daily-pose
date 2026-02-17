@@ -4,6 +4,7 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
@@ -19,6 +20,20 @@ export default {
           800: '#075985',
           900: '#0c4a6e',
         },
+      },
+      // 모바일 최적화 스페이스
+      spacing: {
+        'safe-top': 'env(safe-area-inset-top)',
+        'safe-bottom': 'env(safe-area-inset-bottom)',
+        'safe-left': 'env(safe-area-inset-left)',
+        'safe-right': 'env(safe-area-inset-right)',
+      },
+      // 모바일 터치 타겟 최소 크기
+      minWidth: {
+        'touch': '44px',
+      },
+      minHeight: {
+        'touch': '44px',
       },
     },
   },
