@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Create PWA Icons</title>
+    <style>
+        body { font-family: system-ui; padding: 20px; text-align: center; }
+        canvas { border: 1px solid #ccc; margin: 20px; }
+        button { padding: 10px 20px; font-size: 16px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>PWA 아이콘 생성기</h1>
+    <p>아래 버튼을 클릭하여 아이콘을 다운로드하세요</p>
+    <canvas id="canvas192" width="192" height="192"></canvas><br>
+    <button onclick="download192()">192x192 다운로드</button>
+    <hr>
+    <canvas id="canvas512" width="512" height="512"></canvas><br>
+    <button onclick="download512()">512x512 다운로드</button>
+
+    <script>
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // 검은 배경 (둥근 모서리)
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            ctx.roundRect(0, 0, size, size, size * 0.2);
+            ctx.fill();
+            
+            // 카메라 외곽
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = size * 0.03;
+            const camSize = size * 0.6;
+            const camX = (size - camSize) / 2;
+            const camY = (size - camSize * 0.7) / 2;
+            ctx.beginPath();
+            ctx.roundRect(camX, camY, camSize, camSize * 0.7, size * 0.06);
+            ctx.stroke();
+            
+            // 렌즈 외곽
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.18, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // 렌즈 내부 (흰색 채움)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.09, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 셔터 버튼
+            ctx.beginPath();
+            ctx.arc(size * 0.7, size * 0.65, size * 0.05, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // 플래시
+            const flashSize = size * 0.06;
+            ctx.beginPath();
+            ctx.roundRect(camX + size * 0.02, camY + size * 0.03, flashSize * 1.5, flashSize, size * 0.015);
+            ctx.fill();
+        }
+        
+        drawIcon(document.getElementById('canvas192'), 192);
+        drawIcon(document.getElementById('canvas512'), 512);
+        
+        function download192() {
+            const link = document.createElement('a');
+            link.download = 'icon-192.png';
+            link.href = document.getElementById('canvas192').toDataURL('image/png');
+            link.click();
+        }
+        
+        function download512() {
+            const link = document.createElement('a');
+            link.download = 'icon-512.png';
+            link.href = document.getElementById('canvas512').toDataURL('image/png');
+            link.click();
+        }
+    </script>
+</body>
+</html>

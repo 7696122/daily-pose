@@ -63,8 +63,9 @@ function App() {
         {renderPage()}
       </div>
 
-      {/* 바텀 탭 네비게이션 */}
-      <nav className="bg-black/90 backdrop-blur-lg border-t border-white/10 pb-safe-area-inset-bottom">
+      {/* 바텀 탭 네비게이션 - 카메라 페이지일 때 숨김 */}
+      {currentView !== 'camera' && (
+        <nav className="bg-black/90 backdrop-blur-lg border-t border-white/10 pb-safe-area-inset-bottom">
         <div className="flex items-center justify-around py-2">
           {tabs.map((tab) => {
             const isActive = currentView === tab.id;
@@ -98,6 +99,7 @@ function App() {
           </button>
         </div>
       </nav>
+      )}
     </div>
   );
 }

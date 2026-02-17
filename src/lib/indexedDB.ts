@@ -41,6 +41,10 @@ export const deletePhoto = async (id: string): Promise<void> => {
   await photoStorageInstance.delete(id);
 };
 
+export const updatePhoto = async (photo: Photo): Promise<void> => {
+  await photoStorageInstance.update(photo);
+};
+
 export const clearDatabase = async (): Promise<void> => {
   await photoStorageInstance.clear();
 };

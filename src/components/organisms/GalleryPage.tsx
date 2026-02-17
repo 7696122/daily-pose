@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { Camera, Download, Play, Trash2, Settings, X, GitCompare } from 'lucide-react';
+import { Camera, Download, Play, Trash2, Settings, X, GitCompare, Edit, MessageSquare } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import type { Photo } from '../../types';
-import { deletePhoto, clearDatabase } from '../../lib/indexedDB';
+import { deletePhoto, clearDatabase, updatePhoto } from '../../lib/indexedDB';
 import { downloadTimelapse } from '../../lib/timelapse';
 import { IconButton } from '../atoms';
-import { GalleryGrid, TimelapsePlayer, CalendarHeatmap, BeforeAfterSlider } from '../molecules';
+import { GalleryGrid, TimelapsePlayer, CalendarHeatmap, BeforeAfterSlider, PhotoEditor, PhotoMetadataEditor } from '../molecules';
+import type { PhotoMetadata as PhotoMetadataType } from '../../core/types';
 
 export const GalleryPage = () => {
   const { photos, setPhotos, setCurrentView, deletePhoto: deletePhotoFromStore } = useAppStore();
@@ -14,6 +15,8 @@ export const GalleryPage = () => {
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [showBeforeAfter, setShowBeforeAfter] = useState(false);
+  const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null);
+  const [editingMetadata, setEditingMetadata] = useState<Photo | null>(null);
 
   // 사진 삭제
   const handleDeletePhoto = async (id: string) => {
@@ -101,6 +104,47 @@ export const GalleryPage = () => {
       img.onerror = reject;
       img.src = dataUrl;
     });
+  };
+
+  // 사진 편집 저장
+  const handleEditSave = async (editedImageUrl: string, settings: Photo['editSettings']) => {
+    if (!editingPhoto) return;
+
+    try {
+      // Update in IndexedDB
+      const updatedPhoto = {
+        ...editingPhoto,
+        dataUrl: editedImageUrl,
+        editSettings: settings,
+      };
+      await updatePhoto(updatedPhoto);
+
+      // Update in store
+      setPhotos(photos.map((p) => (p.id === editingPhoto.id ? updatedPhoto : p)));
+      setSelectedPhoto(null);
+      setEditingPhoto(null);
+    } catch (error) {
+      alert('사진 저장에 실패했습니다.');
+    }
+  };
+
+  // 메타데이터 저장
+  const handleMetadataSave = async (metadata: PhotoMetadataType) => {
+    if (!editingMetadata) return;
+
+    try {
+      const updatedPhoto = {
+        ...editingMetadata,
+        metadata,
+      };
+      await updatePhoto(updatedPhoto);
+
+      setPhotos(photos.map((p) => (p.id === editingMetadata.id ? updatedPhoto : p)));
+      setSelectedPhoto(null);
+      setEditingMetadata(null);
+    } catch (error) {
+      alert('메타데이터 저장에 실패했습니다.');
+    }
   };
 
   return (
@@ -221,7 +265,7 @@ export const GalleryPage = () => {
               {/* 핸들 */}
               <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto mb-6" />
 
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 mb-6">
                 <img
                   src={selectedPhoto.dataUrl}
                   alt={selectedPhoto.date}
@@ -245,8 +289,61 @@ export const GalleryPage = () => {
                   <X />
                 </IconButton>
               </div>
+
+              {/* 액션 버튼들 */}
+              <div className="grid grid-cols-3 gap-3">
+                <button
+                  onClick={() => {
+                    setEditingPhoto(selectedPhoto);
+                    setSelectedPhoto(null);
+                  }}
+                  className="flex items-center justify-center gap-2 py-3 bg-gray-800 text-white rounded-xl font-medium active:bg-gray-700 transition-colors"
+                >
+                  <Edit className="w-4 h-4" />
+                  편집
+                </button>
+                <button
+                  onClick={() => {
+                    setEditingMetadata(selectedPhoto);
+                    setSelectedPhoto(null);
+                  }}
+                  className="flex items-center justify-center gap-2 py-3 bg-gray-800 text-white rounded-xl font-medium active:bg-gray-700 transition-colors"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  메모
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedPhoto(null);
+                    handleDeletePhoto(selectedPhoto.id);
+                  }}
+                  className="flex items-center justify-center gap-2 py-3 bg-red-600/20 text-red-400 rounded-xl font-medium active:bg-red-600/30 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  삭제
+                </button>
+              </div>
             </div>
           </div>
+        )}
+
+        {/* 사진 편집기 */}
+        {editingPhoto && (
+          <PhotoEditor
+            imageUrl={editingPhoto.dataUrl}
+            initialSettings={editingPhoto.editSettings}
+            onSave={handleEditSave}
+            onClose={() => setEditingPhoto(null)}
+          />
+        )}
+
+        {/* 메타데이터 편집기 */}
+        {editingMetadata && (
+          <PhotoMetadataEditor
+            metadata={editingMetadata.metadata}
+            onSave={handleMetadataSave}
+            onClose={() => setEditingMetadata(null)}
+          />
         )}
       </div>
     </>

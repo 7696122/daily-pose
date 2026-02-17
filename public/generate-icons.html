@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Generate PWA Icons</title>
+</head>
+<body>
+    <canvas id="canvas192" width="192" height="192"></canvas>
+    <canvas id="canvas512" width="512" height="512"></canvas>
+    <script>
+        // Draw camera icon
+        function drawIcon(canvas, size) {
+            const ctx = canvas.getContext('2d');
+            
+            // Background - black rounded rectangle
+            ctx.fillStyle = '#000000';
+            ctx.beginPath();
+            const radius = size * 0.23;
+            ctx.roundRect(0, 0, size, size, radius);
+            ctx.fill();
+            
+            // Camera body
+            const scale = size / 512;
+            const offset = size * 0.2;
+            const camSize = size * 0.6;
+            
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = size * 0.04;
+            ctx.lineCap = 'round';
+            
+            // Camera body outline
+            const camX = (size - camSize) / 2;
+            const camY = (size - camSize * 0.7) / 2;
+            ctx.beginPath();
+            ctx.roundRect(camX, camY, camSize, camSize * 0.7, size * 0.08);
+            ctx.stroke();
+            
+            // Lens outer
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.2, 0, Math.PI * 2);
+            ctx.stroke();
+            
+            // Lens inner (white fill)
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(size/2, size/2, size * 0.1, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Shutter button
+            ctx.beginPath();
+            ctx.arc(size * 0.7, size * 0.65, size * 0.06, 0, Math.PI * 2);
+            ctx.fill();
+            
+            // Flash
+            ctx.fillStyle = '#ffffff';
+            const flashSize = size * 0.08;
+            const flashX = camX + size * 0.03;
+            const flashY = camY + size * 0.04;
+            ctx.beginPath();
+            ctx.roundRect(flashX, flashY, flashSize * 1.5, flashSize, size * 0.02);
+            ctx.fill();
+        }
+        
+        // Generate 192x192
+        drawIcon(document.getElementById('canvas192'), 192);
+        const png192 = document.getElementById('canvas192').toDataURL('image/png');
+        document.getElementById('canvas192').nextSibling = document.createElement('a');
+        document.getElementById('canvas192').nextSibling.href = png192;
+        document.getElementById('canvas192').nextSibling.download = 'icon-192.png';
+        document.getElementById('canvas192').nextSibling.textContent = 'Download 192x192';
+        document.getElementById('canvas192').nextSibling.click();
+        
+        // Generate 512x512
+        drawIcon(document.getElementById('canvas512'), 512);
+        const png512 = document.getElementById('canvas512').toDataURL('image/png');
+        document.getElementById('canvas512').nextSibling = document.createElement('a');
+        document.getElementById('canvas512').nextSibling.href = png512;
+        document.getElementById('canvas512').nextSibling.download = 'icon-512.png';
+        document.getElementById('canvas512').nextSibling.click();
+    </script>
+</body>
+</html>

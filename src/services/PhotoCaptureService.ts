@@ -1,0 +1,54 @@
+import type { CaptureOptions } from '../core/types';
+import { calculateCropRegion } from '../lib/utils/aspect-ratio.utils';
+import {
+  createCanvas,
+  getCanvasContext,
+  drawImageFromVideo,
+  drawImageFromCanvas,
+  applyHorizontalFlip,
+  canvasToDataURL,
+  getVideoDimensions,
+} from '../lib/utils/canvas.utils';
+
+/**
+ * Photo Capture Service
+ * Single Responsibility: Capture photos from video with transformations
+ */
+export class PhotoCaptureService {
+  capture(video: HTMLVideoElement, options: CaptureOptions): string {
+    const videoDimensions = getVideoDimensions(video);
+
+    const crop = calculateCropRegion(videoDimensions, options.aspectRatio);
+
+    const canvas = createCanvas({ width: crop.width, height: crop.height });
+    const context = getCanvasContext(canvas);
+
+    if (options.facingMode === 'user') {
+      this.captureWithMirror(video, context, videoDimensions, crop);
+    } else {
+      drawImageFromVideo(context, video, crop, { width: crop.width, height: crop.height });
+    }
+
+    return canvasToDataURL(canvas, options.quality ?? 0.95);
+  }
+
+  private captureWithMirror(
+    video: HTMLVideoElement,
+    context: CanvasRenderingContext2D,
+    videoDimensions: { width: number; height: number },
+    crop: { x: number; y: number; width: number; height: number }
+  ): void {
+    const tempCanvas = createCanvas(videoDimensions);
+    const tempContext = getCanvasContext(tempCanvas);
+
+    applyHorizontalFlip(tempContext, videoDimensions.width);
+    tempContext.drawImage(video, 0, 0, videoDimensions.width, videoDimensions.height);
+
+    drawImageFromCanvas(context, tempCanvas, crop, { width: crop.width, height: crop.height });
+  }
+}
+
+/**
+ * Singleton instance
+ */
+export const photoCaptureService = new PhotoCaptureService();

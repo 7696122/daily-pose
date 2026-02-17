@@ -60,13 +60,6 @@ export const OverlayCamera = forwardRef<HTMLVideoElement, OverlayCameraProps>(({
         </div>
       )}
 
-      {/* 비율 가이드 오버레이 (전체 화면일 때만) */}
-      {fullscreen && (
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className={`${aspectRatioClasses[aspectRatio]} w-full border-2 border-white/30`} />
-        </div>
-      )}
-
       {/* 가이드 오버레이 (항상 표시) */}
       {overlayImage && showOverlay && (
         <img
