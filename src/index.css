@@ -30,10 +30,6 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #0a0a0a;
-
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -42,6 +38,17 @@
   /* Mobile font size optimization */
   -webkit-text-size-adjust: 100%;
   text-size-adjust: 100%;
+}
+
+/* Dark theme (default) */
+:root,
+:root.dark {
+  color-scheme: dark;
+}
+
+/* Light theme */
+:root.light {
+  color-scheme: light;
 }
 
 * {
@@ -118,9 +125,10 @@ select {
 
 /* 다크 모드 지원 */
 @media (prefers-color-scheme: light) {
-  :root {
+  :root:not(.dark):not(.light) {
+    color-scheme: light;
     color: #1a1a1a;
-    background-color: #ffffff;
+    background-color: #f5f5f5;
   }
 }
 

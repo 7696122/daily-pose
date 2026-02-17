@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { ChevronLeft, Trash2, Info, Moon, Globe, ChevronRight, Download, Upload, Bell, BellOff } from 'lucide-react';
+import { Trash2, Info, Globe, ChevronRight, Download, Upload, Bell, BellOff, Layers } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { useAppStore } from '../../stores/useAppStore';
+import { useNavigationStore, useGalleryStore, useProjectStore, useLanguageStore } from '../../stores';
+import { t } from '../../lib/i18n';
 import { clearDatabase } from '../../lib/indexedDB';
 import { exportBackup, importBackup, validateBackupSize, getBackupInfo } from '../../lib/backup';
 import { savePhoto } from '../../lib/indexedDB';
@@ -14,9 +15,6 @@ import {
   getScheduledReminder,
   formatTime,
 } from '../../lib/notifications';
-
-type Theme = 'light' | 'dark' | 'system';
-type Language = 'ko' | 'en';
 
 interface SettingItem {
   icon: LucideIcon;
@@ -34,9 +32,10 @@ interface SettingSection {
 }
 
 export const SettingsPage = () => {
-  const { setPhotos, setCurrentView, photos, addPhoto } = useAppStore();
-  const [theme, setTheme] = useState<Theme>('system');
-  const [language, setLanguage] = useState<Language>('ko');
+  const { setPhotos, photos, addPhoto } = useGalleryStore();
+  const { projects, currentProject } = useProjectStore();
+  const { setCurrentView } = useNavigationStore();
+  const { language, setLanguage } = useLanguageStore();
   const [isDeleting, setIsDeleting] = useState(false);
   const [isExporting, setIsExporting] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -55,31 +54,31 @@ export const SettingsPage = () => {
   }, []);
 
   const handleDeleteAll = async () => {
-    if (!confirm('모든 사진과 데이터를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    if (!confirm(t('deleteAllConfirm', language))) return;
 
     setIsDeleting(true);
     try {
       await clearDatabase();
       setPhotos([]);
-    } catch (error) {
-      alert('삭제에 실패했습니다.');
+    } catch {
+      alert(t('deleteAllError', language));
     } finally {
       setIsDeleting(false);
     }
   };
 
   const handleExport = async () => {
-    if (photos.length === 0) {
-      alert('내보낼 사진이 없습니다.');
+    if (photos.length === 0 && projects.length === 0) {
+      alert(t('noPhotosToExport', language));
       return;
     }
 
     setIsExporting(true);
     try {
-      await exportBackup(photos);
-      alert(`${photos.length}장의 사진이 내보내기 되었습니다.`);
-    } catch (error) {
-      alert('내보내기에 실패했습니다.');
+      await exportBackup(photos, projects);
+      alert(`${photos.length}${t('exportSuccess', language)}`);
+    } catch {
+      alert(t('exportError', language));
     } finally {
       setIsExporting(false);
     }
@@ -88,24 +87,25 @@ export const SettingsPage = () => {
   const handleImport = async (file: File) => {
     setIsImporting(true);
     try {
-      const importedPhotos = await importBackup(file);
+      const { photos: importedPhotos, projects: importedProjects } = await importBackup(file);
 
-      if (!validateBackupSize(importedPhotos)) {
-        alert(`백업 파일이 너무 큽니다. (${importedPhotos.length}장)`);
+      if (!validateBackupSize({ photos: importedPhotos, projects: importedProjects })) {
+        alert(`${t('backupTooLarge', language)}${importedPhotos.length}${t('backupTooLargeEnd', language)}`);
         return;
       }
 
       const backupInfo = getBackupInfo({
-        version: '1.0.0',
+        version: '2.0.0',
         exportDate: Date.now(),
         photos: importedPhotos,
+        projects: importedProjects,
       });
 
       const confirmMessage =
-        `백업 파일을 가져오시겠습니까?\n\n` +
-        `사진: ${backupInfo.photoCount}장\n` +
-        `내보낸 날짜: ${backupInfo.exportDate}\n\n` +
-        `현재 사진이 유지되고 추가됩니다.`;
+        `${t('importConfirm', language)}\n\n` +
+        `${t('photosLabel', language)}: ${backupInfo.photoCount}${t('backupTooLargeEnd', language)}\n` +
+        `${t('exportedDate', language)}: ${backupInfo.exportDate}\n\n` +
+        `${t('currentPhotosKept', language)}`;
 
       if (!confirm(confirmMessage)) return;
 
@@ -121,9 +121,9 @@ export const SettingsPage = () => {
         }
       }
 
-      alert(`${importedCount}장의 사진이 가져오기 되었습니다.`);
+      alert(`${importedCount}${t('importSuccess', language)}`);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '가져오기에 실패했습니다.');
+      alert(error instanceof Error ? error.message : t('importError', language));
     } finally {
       setIsImporting(false);
       if (fileInputRef.current) {
@@ -145,7 +145,7 @@ export const SettingsPage = () => {
 
   const handleNotificationToggle = async () => {
     if (!isNotificationSupported()) {
-      alert('이 브라우저는 알림을 지원하지 않습니다.');
+      alert(t('notificationNotSupported', language));
       return;
     }
 
@@ -154,7 +154,7 @@ export const SettingsPage = () => {
       clearScheduledReminder();
       setReminderTime(null);
     } else if (notificationPermission === 'denied') {
-      alert('알림이 차단되었습니다. 브라우저 설정에서 알림을 허용해주세요.');
+      alert(t('notificationBlocked', language));
       return;
     } else {
       // Request permission
@@ -166,10 +166,10 @@ export const SettingsPage = () => {
           // Set default reminder time (9:00 AM)
           scheduleDailyReminder(9, 0);
           setReminderTime({ hour: 9, minute: 0 });
-          alert('알림이 설정되었습니다. 매일 오전 9시에 알림을 보내드립니다.');
+          alert(t('notificationSet', language));
         }
       } catch {
-        alert('알림 권한을 가져오지 못했습니다.');
+        alert(t('notificationPermissionError', language));
       }
     }
   };
@@ -180,70 +180,66 @@ export const SettingsPage = () => {
         const permission = await requestNotificationPermission();
         setNotificationPermission(permission);
       } catch {
-        alert('알림 권한을 가져오지 못했습니다.');
+        alert(t('notificationPermissionError', language));
       }
     }
   };
 
   const settingsSections: SettingSection[] = [
     {
+      title: t('projects', language),
       items: [
         {
-          icon: Moon,
+          icon: Layers,
           iconColor: 'text-purple-400',
-          label: '테마',
-          value: theme === 'light' ? '밝게' : theme === 'dark' ? '어둡게' : '자동',
-          onClick: () => {
-            const themes: Theme[] = ['system', 'dark', 'light'];
-            const currentIndex = themes.indexOf(theme);
-            const nextTheme = themes[(currentIndex + 1) % themes.length];
-            setTheme(nextTheme);
-          },
+          label: currentProject?.name || t('projects', language),
+          value: `${projects.length} ${t('projects', language)}`,
+          onClick: () => setCurrentView('project-select'),
         },
       ],
     },
     {
-      title: '알림',
+      title: t('notifications', language),
       items: [
         {
           icon: notificationPermission === 'granted' && reminderTime ? Bell : BellOff,
           iconColor: notificationPermission === 'granted' && reminderTime ? 'text-yellow-400' : 'text-gray-400',
-          label: '데일리 리마인더',
-          value: reminderTime ? formatTime(reminderTime.hour, reminderTime.minute) : '꺼짐',
+          label: t('dailyReminder', language),
+          value: reminderTime ? formatTime(reminderTime.hour, reminderTime.minute) : t('off', language),
           onClick: handleNotificationToggle,
           disabled: notificationPermission === 'denied',
         },
         {
           icon: Info,
           iconColor: 'text-gray-500',
-          label: '알림 권한',
+          label: t('notificationPermission', language),
           value:
             notificationPermission === 'granted'
-              ? '허용됨'
+              ? t('granted', language)
               : notificationPermission === 'denied'
-              ? '차단됨'
-              : '허용 필요',
+              ? t('denied', language)
+              : t('default', language),
           onClick: handleNotificationPermission,
           disabled: notificationPermission !== 'default',
         },
       ],
     },
     {
-      title: '데이터',
+      title: t('data', language),
       items: [
         {
           icon: Download,
           iconColor: 'text-green-400',
-          label: '내보내기',
-          value: `${photos.length}장`,
+          label: t('exportBackup', language),
+          value: `${photos.length}${t('photos', language)}`,
           onClick: handleExport,
           disabled: isExporting || photos.length === 0,
         },
         {
           icon: Upload,
           iconColor: 'text-blue-400',
-          label: '가져오기',
-          value: isImporting ? '가져오는 중...' : '백업 파일',
+          label: t('importBackup', language),
+          value: isImporting ? t('importing', language) : t('backupFile', language),
           onClick: handleImportClick,
           disabled: isImporting,
         },
@@ -254,8 +250,8 @@ export const SettingsPage = () => {
         {
           icon: Globe,
           iconColor: 'text-blue-400',
-          label: '언어',
-          value: language === 'ko' ? '한국어' : 'English',
+          label: t('language', language),
+          value: language === 'ko' ? t('korean', language) : t('english', language),
           onClick: () => {
             setLanguage(language === 'ko' ? 'en' : 'ko');
           },
@@ -267,20 +263,20 @@ export const SettingsPage = () => {
         {
           icon: Trash2,
           iconColor: 'text-red-400',
-          label: '모든 사진 삭제',
-          value: `${photos.length}장`,
+          label: t('deleteAllData', language),
+          value: `${photos.length}${t('photos', language)}`,
           danger: true,
           onClick: handleDeleteAll,
         },
       ],
     },
     {
-      title: '정보',
+      title: t('about', language),
       items: [
         {
           icon: Info,
           iconColor: 'text-gray-400',
-          label: '버전',
+          label: t('version', language),
           value: '1.0.0',
           onClick: () => {},
         },
@@ -299,18 +295,10 @@ export const SettingsPage = () => {
         className="hidden"
       />
 
-      <div className="flex flex-col h-full bg-[#0a0a0a]">
+      <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0a0a0a]">
       {/* iOS 스타일 헤더 */}
-      <div className="flex items-center justify-between px-4 py-3 bg-black/50 backdrop-blur-lg border-b border-white/10">
-        <button
-          onClick={() => setCurrentView('gallery')}
-          className="text-primary-500 text-[17px] font-medium flex items-center gap-1 active:opacity-60 transition-opacity"
-        >
-          <ChevronLeft className="w-5 h-5" />
-          갤러리
-        </button>
-        <h1 className="text-lg font-semibold">설정</h1>
-        <div className="w-16" /> {/* 중앙 정렬용 */}
+      <div className="flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-black/50 backdrop-blur-lg border-b border-gray-200 dark:border-white/10">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('settings', language)}</h1>
       </div>
 
       {/* 설정 목록 */}
@@ -319,9 +307,9 @@ export const SettingsPage = () => {
           {settingsSections.map((section, sectionIndex) => (
             <div key={sectionIndex} className="px-4 mb-5">
               {section.title && (
-                <h2 className="text-sm text-gray-500 mb-2 px-3">{section.title}</h2>
+                <h2 className="text-sm text-gray-600 dark:text-gray-500 mb-2 px-3">{section.title}</h2>
               )}
-              <div className="bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden">
+              <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-xl overflow-hidden">
                 {section.items.map((item, index) => (
                   <button
                     key={item.label}
@@ -339,12 +327,12 @@ export const SettingsPage = () => {
                       <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${item.iconColor || 'text-gray-400'}`}>
                         <item.icon className="w-4.5 h-4.5" />
                       </div>
-                      <span className={`text-[17px] ${item.danger ? 'text-red-400' : 'text-white'}`}>
+                      <span className={`text-[17px] ${item.danger ? 'text-red-400' : 'text-gray-900 dark:text-white'}`}>
                         {item.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className={`text-[17px] ${item.danger ? 'text-red-300' : 'text-gray-400'}`}>
+                      <span className={`text-[17px] ${item.danger ? 'text-red-300' : 'text-gray-600 dark:text-gray-400'}`}>
                         {item.value}
                       </span>
                       {!item.danger && <ChevronRight className="w-5 h-5 text-gray-600" />}
@@ -358,8 +346,8 @@ export const SettingsPage = () => {
           {/* 앱 정보 카드 */}
           <div className="px-4 mt-6">
             <div className="text-center py-4">
-              <p className="text-gray-500 text-sm">Daily Pose</p>
-              <p className="text-gray-600 text-xs mt-1">매일의 순간을 기록하세요</p>
+              <p className="text-gray-600 dark:text-gray-500 text-sm">Daily Pose</p>
+              <p className="text-gray-700 dark:text-gray-600 text-xs mt-1">{t('appTagline', language)}</p>
             </div>
           </div>
         </div>

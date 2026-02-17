@@ -57,6 +57,33 @@ export const getActivityLevel = (count: number): 0 | 1 | 2 | 3 | 4 => {
 };
 
 /**
+ * Get days from first photo to today
+ */
+export const getDaysFromFirstPhoto = (firstPhotoTimestamp?: number): Date[] => {
+  const days: Date[] = [];
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  if (!firstPhotoTimestamp) {
+    return [today];
+  }
+
+  const firstDate = new Date(firstPhotoTimestamp);
+  firstDate.setHours(0, 0, 0, 0);
+
+  // Start from the Sunday of the week containing the first photo
+  const startDate = getWeekStartDate(firstDate);
+
+  let currentDate = new Date(startDate);
+  while (currentDate <= today) {
+    days.push(new Date(currentDate));
+    currentDate.setDate(currentDate.getDate() + 1);
+  }
+
+  return days;
+};
+
+/**
  * Get last 365 days from today
  */
 export const getLast365Days = (): Date[] => {
@@ -77,7 +104,7 @@ export const getLast365Days = (): Date[] => {
  * Group photos by date key
  */
 export const groupPhotosByDate = <T extends { timestamp: number }>(
-  photos: T[]
+  photos: readonly T[]
 ): Map<string, T[]> => {
   const grouped = new Map<string, T[]>();
 

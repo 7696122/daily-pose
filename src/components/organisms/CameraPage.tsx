@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { Image as ImageIcon, RotateCw, Camera as CameraIcon, Settings } from 'lucide-react';
-import { useAppStore } from '../../stores/useAppStore';
+import { useNavigationStore, useGalleryStore, useCameraStore, useOverlayStore, useLanguageStore, useProjectStore } from '../../stores';
+import { t } from '../../lib/i18n';
 import { startCamera, stopCamera, capturePhoto } from '../../lib/camera';
 import { savePhoto } from '../../lib/indexedDB';
 import { formatDate } from '../../lib/utils';
@@ -14,20 +15,29 @@ export const CameraPage = () => {
   const [isCapturing, setIsCapturing] = useState(false);
   const [showGrid, setShowGrid] = useState(false);
 
+  const { photos } = useGalleryStore();
+  const { currentProjectId } = useProjectStore();
+  const { language } = useLanguageStore();
   const {
     stream,
-    photos,
-    overlayOpacity,
     facingMode,
     setStream,
-    setCameraActive,
-    setOverlayOpacity,
-    addPhoto,
-    setCurrentView,
     setFacingMode,
-  } = useAppStore();
+  } = useCameraStore();
+  const { overlayOpacity, setOverlayOpacity } = useOverlayStore();
+  const { addPhoto } = useGalleryStore();
+  const { setCurrentView } = useNavigationStore();
 
   const latestPhoto = photos.length > 0 ? photos[photos.length - 1] : null;
+
+  const handleRestartCamera = useCallback(async () => {
+    try {
+      const mediaStream = await startCamera(facingMode);
+      setStream(mediaStream);
+    } catch (error) {
+      console.error('카메라 재시작 실패:', error);
+    }
+  }, [facingMode, setStream]);
 
   useEffect(() => {
     if (stream) {
@@ -36,25 +46,14 @@ export const CameraPage = () => {
         handleRestartCamera();
       }
     }
-  }, [stream]);
-
-  const handleRestartCamera = async () => {
-    try {
-      const mediaStream = await startCamera(facingMode);
-      setStream(mediaStream);
-      setCameraActive(true);
-    } catch (error) {
-      console.error('카메라 재시작 실패:', error);
-    }
-  };
+  }, [stream, handleRestartCamera]);
 
   const handleStartCamera = async () => {
     try {
       const mediaStream = await startCamera(facingMode);
       setStream(mediaStream);
-      setCameraActive(true);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '카메라를 시작할 수 없습니다.');
+      alert(error instanceof Error ? error.message : t('cameraError', language));
     }
   };
 
@@ -70,7 +69,7 @@ export const CameraPage = () => {
       const mediaStream = await startCamera(newFacingMode);
       setStream(mediaStream);
     } catch (error) {
-      alert(error instanceof Error ? error.message : '카메라를 전환할 수 없습니다.');
+      alert(error instanceof Error ? error.message : t('cameraSwitchError', language));
     }
   };
 
@@ -83,11 +82,17 @@ export const CameraPage = () => {
     try {
       const dataUrl = capturePhoto(videoElement as HTMLVideoElement, facingMode, ASPECT_RATIO);
 
+      if (!currentProjectId) {
+        alert('프로젝트를 선택해주세요.');
+        return;
+      }
+
       const photo = {
         id: `photo-${Date.now()}`,
         dataUrl,
         timestamp: Date.now(),
         date: formatDate(Date.now()),
+        projectId: currentProjectId,
         aspectRatio: ASPECT_RATIO,
       };
 
@@ -96,12 +101,19 @@ export const CameraPage = () => {
 
       await new Promise((resolve) => setTimeout(resolve, 200));
     } catch (error) {
-      alert('사진 저장에 실패했습니다.');
+      alert(t('photoSaveError', language));
       console.error(error);
     } finally {
       setIsCapturing(false);
     }
   };
+
+  useEffect(() => {
+    // 카메라 자동 시작
+    if (!stream) {
+      handleStartCamera();
+    }
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -112,23 +124,23 @@ export const CameraPage = () => {
   }, [stream]);
 
   return (
-    <div className="flex flex-col h-dvh bg-black">
+    <div className="flex flex-col h-dvh bg-white dark:bg-black">
       {!stream ? (
         // 초기 화면
         <div className="flex flex-col items-center justify-center h-full px-6">
-          <div className="w-32 h-32 rounded-full bg-white/5 flex items-center justify-center mb-8">
-            <CameraIcon className="w-16 h-16 text-gray-500" />
+          <div className="w-32 h-32 rounded-full bg-gray-100 dark:bg-white/5 flex items-center justify-center mb-8">
+            <CameraIcon className="w-16 h-16 text-gray-600 dark:text-gray-500" />
           </div>
-          <h2 className="text-2xl font-bold mb-3">카메라</h2>
-          <p className="text-gray-500 mb-8 text-center">
-            {photos.length === 0 ? '첫 사진을 찍어보세요' : `${photos.length + 1}번째 사진`}
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-white">{t('camera', language)}</h2>
+          <p className="text-gray-600 dark:text-gray-500 mb-8 text-center">
+            {photos.length === 0 ? t('takeFirstPhoto', language) : `${photos.length + 1}${t('photoNumber', language)}`}
           </p>
           <Button
             variant="primary"
             size="lg"
             onClick={handleStartCamera}
           >
-            카메라 시작
+            {t('startCamera', language)}
           </Button>
         </div>
       ) : (
@@ -149,7 +161,7 @@ export const CameraPage = () => {
           </div>
 
           {/* 하단 컨트롤 바 - iOS 카메라 스타일 */}
-          <div className="bg-black/80 backdrop-blur-lg relative z-50">
+          <div className="bg-white/90 dark:bg-black/80 backdrop-blur-lg relative z-50">
             <div className="flex items-end justify-center px-6 pb-6 pt-4">
               {/* 좌측: 갤러리 */}
               <div className="flex items-center gap-4 mr-6">
@@ -190,7 +202,7 @@ export const CameraPage = () => {
                   transition-all duration-100
                   ${isCapturing ? 'scale-90' : 'active:scale-90'}
                 `}
-                aria-label="사진 촬영"
+                aria-label={t('capture', language)}
               >
                 <div className="w-16 h-16 rounded-full bg-white transition-all duration-100" />
               </button>

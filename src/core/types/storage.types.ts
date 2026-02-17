@@ -1,4 +1,5 @@
 import type { Photo } from './photo.types';
+import type { Project, ProjectCreateDTO } from './project.types';
 
 /**
  * Storage Result
@@ -14,4 +15,18 @@ export interface IPhotoStorage {
   readonly findById: (id: string) => Promise<Photo | null>;
   readonly delete: (id: string) => Promise<void>;
   readonly clear: () => Promise<void>;
+  readonly findByProjectId: (projectId: string) => Promise<readonly Photo[]>;
+  readonly update: (photo: Photo) => Promise<void>;
+}
+
+/**
+ * Project Storage Port (Interface)
+ */
+export interface IProjectStorage {
+  readonly save: (project: Project) => Promise<void>;
+  readonly findAll: () => Promise<readonly Project[]>;
+  readonly findById: (id: string) => Promise<Project | null>;
+  readonly delete: (id: string) => Promise<void>;
+  readonly update: (project: Project) => Promise<void>;
+  readonly create: (dto: ProjectCreateDTO) => Promise<Project>;
 }

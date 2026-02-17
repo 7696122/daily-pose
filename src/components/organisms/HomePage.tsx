@@ -1,11 +1,15 @@
 import { useMemo } from 'react';
 import { Camera, Flame, Calendar, TrendingUp, ArrowRight } from 'lucide-react';
-import { useAppStore } from '../../stores/useAppStore';
+import { useNavigationStore, useGalleryStore, useLanguageStore } from '../../stores';
+import { t } from '../../lib/i18n';
 import { CalendarHeatmap } from '../molecules/CalendarHeatmap';
 import { formatDateKey, parseDateKey, isSameDay } from '../../lib/utils/date.utils';
+import { ProjectSwitcher } from '../molecules/ProjectSwitcher';
 
 export const HomePage = () => {
-  const { photos, setCurrentView } = useAppStore();
+  const { photos } = useGalleryStore();
+  const { setCurrentView } = useNavigationStore();
+  const { language } = useLanguageStore();
 
   // 통계 계산
   const stats = useMemo(() => {
@@ -24,7 +28,7 @@ export const HomePage = () => {
 
     // 스트릭 계산
     let streak = 0;
-    let checkDate = new Date(today);
+    const checkDate = new Date(today);
 
     while (true) {
       const checkKey = formatDateKey(checkDate);
@@ -93,11 +97,14 @@ export const HomePage = () => {
   }, [photos]);
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a]">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0a0a0a]">
       {/* 헤더 */}
-      <div className="px-4 pt-12 pb-4 bg-gradient-to-b from-black/50 to-transparent">
-        <h1 className="text-3xl font-bold text-white mb-1">Daily Pose</h1>
-        <p className="text-gray-500 text-sm">매일의 순간을 기록하세요</p>
+      <div className="px-4 pt-12 pb-4 bg-gradient-to-b from-white/80 dark:from-black/50 to-transparent">
+        <div className="flex items-center justify-between mb-2">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Daily Pose</h1>
+          <ProjectSwitcher onManageProjects={() => setCurrentView('project-select')} />
+        </div>
+        <p className="text-gray-600 dark:text-gray-500 text-sm">{t('gallery', language)}</p>
       </div>
 
       {/* 스크롤 가능한 콘텐츠 */}
@@ -110,9 +117,9 @@ export const HomePage = () => {
           >
             <div className="flex items-center justify-between mb-4">
               <div>
-                <p className="text-primary-100 text-sm mb-1">오늘</p>
+                <p className="text-primary-100 text-sm mb-1">{t('home', language)}</p>
                 <p className="text-white text-xl font-semibold">
-                  {stats.hasPhotoToday ? '✨ 사진 완료!' : '📸 사진 찍기'}
+                  {stats.hasPhotoToday ? t('photoComplete', language) : t('takePhoto', language)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-white/20 rounded-full flex items-center justify-center">
@@ -121,7 +128,7 @@ export const HomePage = () => {
             </div>
             {!stats.hasPhotoToday && (
               <div className="flex items-center gap-2 text-primary-100 text-sm">
-                <span>지금 바로 기록하기</span>
+                <span>{t('recordNow', language)}</span>
                 <ArrowRight className="w-4 h-4" />
               </div>
             )}
@@ -130,18 +137,18 @@ export const HomePage = () => {
 
         {/* 스트릭 카드 */}
         {stats.streak > 0 && (
-          <div className="mb-4 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
+          <div className="mb-4 bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 bg-orange-500/20 rounded-xl flex items-center justify-center">
                 <Flame className="w-6 h-6 text-orange-500" />
               </div>
               <div className="flex-1">
-                <p className="text-white text-2xl font-bold">{stats.streak}일</p>
-                <p className="text-gray-400 text-sm">연속 기록 중</p>
+                <p className="text-gray-900 dark:text-white text-2xl font-bold">{stats.streak}{t('days', language)}</p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">연속 기록 중</p>
               </div>
               <div className="text-right">
-                <p className="text-gray-500 text-xs">최장</p>
-                <p className="text-gray-300 text-sm font-medium">{stats.longestStreak}일</p>
+                <p className="text-gray-700 dark:text-gray-500 text-xs">최장</p>
+                <p className="text-gray-700 dark:text-gray-300 text-sm font-medium">{stats.longestStreak}{t('days', language)}</p>
               </div>
             </div>
           </div>
@@ -149,33 +156,33 @@ export const HomePage = () => {
 
         {/* 요약 통계 */}
         <div className="mb-4 grid grid-cols-2 gap-3">
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4">
+          <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <Calendar className="w-4 h-4 text-blue-400" />
-              <p className="text-gray-500 text-xs">총 기록</p>
+              <p className="text-gray-600 dark:text-gray-500 text-xs">{t('totalRecords', language)}</p>
             </div>
-            <p className="text-white text-2xl font-bold">{stats.totalDays}일</p>
+            <p className="text-gray-900 dark:text-white text-2xl font-bold">{stats.totalDays}{t('days', language)}</p>
           </div>
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4">
+          <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-2">
               <TrendingUp className="w-4 h-4 text-green-400" />
-              <p className="text-gray-500 text-xs">총 사진</p>
+              <p className="text-gray-600 dark:text-gray-500 text-xs">{t('totalPhotos', language)}</p>
             </div>
-            <p className="text-white text-2xl font-bold">{photos.length}장</p>
+            <p className="text-gray-900 dark:text-white text-2xl font-bold">{photos.length}{t('photos', language)}</p>
           </div>
         </div>
 
         {/* 캘린더 히트맵 */}
         {photos.length > 0 && (
-          <div className="mb-4 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
+          <div className="mb-4 bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 overflow-x-auto">
             <CalendarHeatmap photos={photos} />
           </div>
         )}
 
         {/* 비포/애프터 프리뷰 */}
         {beforeAfterPhotos && (
-          <div className="mb-4 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-            <p className="text-white font-semibold mb-3">변화 비교</p>
+          <div className="mb-4 bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4">
+            <p className="text-gray-900 dark:text-white font-semibold mb-3">변화 비교</p>
             <div className="flex gap-2">
               <div className="flex-1 aspect-[3/4] rounded-xl overflow-hidden relative">
                 <img
@@ -222,12 +229,12 @@ export const HomePage = () => {
         {recentPhotos.length > 0 && (
           <div className="mb-4">
             <div className="flex items-center justify-between mb-3">
-              <p className="text-white font-semibold">최근 사진</p>
+              <p className="text-gray-900 dark:text-white font-semibold">최근 사진</p>
               <button
                 onClick={() => setCurrentView('gallery')}
                 className="text-primary-500 text-sm"
               >
-                모두 보기
+                {t('gallery', language)}
               </button>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2">
@@ -249,20 +256,20 @@ export const HomePage = () => {
 
         {/* 시작 가이드 (사진 없을 때) */}
         {photos.length === 0 && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 text-center">
-            <div className="w-16 h-16 bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
-              <Camera className="w-8 h-8 text-gray-400" />
+          <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-6 text-center">
+            <div className="w-16 h-16 bg-gray-200 dark:bg-white/10 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Camera className="w-8 h-8 text-gray-600 dark:text-gray-400" />
             </div>
-            <p className="text-white font-semibold mb-2">첫 사진을 찍어볼까요?</p>
-            <p className="text-gray-500 text-sm mb-4">
-              매일 같은 포즈로 사진을 찍어<br />
-              변화를 기록해보세요
+            <p className="text-gray-900 dark:text-white font-semibold mb-2">{t('takeFirstPhotoQuestion', language)}</p>
+            <p className="text-gray-600 dark:text-gray-500 text-sm mb-4">
+              {t('emptyMessage', language)}<br />
+              {t('emptyMessage2', language)}
             </p>
             <button
               onClick={() => setCurrentView('camera')}
               className="w-full bg-primary-600 text-white font-medium py-3 rounded-xl active:scale-[0.98] transition-transform"
             >
-              시작하기
+              {t('getStarted', language)}
             </button>
           </div>
         )}

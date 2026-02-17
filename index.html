@@ -44,29 +44,54 @@
     <meta name="theme-color" content="#000000" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="application-name" content="DailyPose" />
+
+    <!-- Eruda for debugging -->
+    <script>
+      (function() {
+        // Eruda는 개발 모드 또는 ?eruda=true일 때만 로드
+        const isDevMode = window.location.hostname === 'localhost' ||
+                         window.location.hostname === '127.0.0.1' ||
+                         window.location.port === '5173' ||
+                         window.location.search.includes('eruda=true');
+
+        if (isDevMode) {
+          var script = document.createElement('script');
+          script.src = 'https://cdn.jsdelivr.net/npm/eruda@3.4.3/eruda.min.js';
+          script.onload = function() {
+            if (window.eruda) {
+              window.eruda.init();
+              console.log('%c✓ Eruda v3.4.3 활성화 ', 'background: #4CAF50; color: white; padding: 4px; font-weight: bold;');
+            }
+          };
+          script.onerror = function() {
+            console.warn('Eruda 로드 실패 - 네트워크 연결 확인');
+          };
+          document.head.appendChild(script);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // 서비스 워커 등록
+      // 서비스 워커 등록 (개발 모드에서는 제외)
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js', {
-            scope: '/'
-          }).then((registration) => {
-            console.log('SW registered:', registration);
+        const isDev = window.location.hostname === 'localhost' ||
+                     window.location.hostname === '127.0.0.1' ||
+                     window.location.port === '5173';
 
-            // PWA 설치 프롬프트 테스트
-            window.addEventListener('beforeinstallprompt', (e) => {
-              console.log('beforeinstallprompt fired');
-              e.preventDefault();
-              // 나중에 설치 프롬프트를 표시할 수 있음
+        if (!isDev) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js', {
+              scope: '/'
+            }).then((registration) => {
+              console.log('SW registered:', registration);
+            }).catch((registrationError) => {
+              console.log('SW registration failed:', registrationError);
             });
-          }).catch((registrationError) => {
-            console.log('SW registration failed:', registrationError);
           });
-        });
+        }
       }
     </script>
   </body>

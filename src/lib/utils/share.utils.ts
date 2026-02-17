@@ -85,7 +85,7 @@ export const shareToSocial = async (blob: Blob, filename: string) => {
         text: '나의 변화를 기록한 타임랩스입니다!',
       });
       return true;
-    } catch (error) {
+    } catch {
       // User cancelled or error
       return false;
     }

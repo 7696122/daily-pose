@@ -1,12 +1,26 @@
-import type { Photo } from '../types';
+import type { Photo, Project } from '../types';
 
 /**
- * Backup data structure
+ * Backup data structure v2.0
  */
 export interface BackupData {
   version: string;
   exportDate: number;
+  projects: ProjectBackup[];
   photos: PhotoBackup[];
+}
+
+export interface ProjectBackup {
+  id: string;
+  name: string;
+  type: string;
+  createdAt: number;
+  updatedAt: number;
+  coverPhotoId?: string;
+  settings: {
+    reminderEnabled: boolean;
+    reminderTime?: { hour: number; minute: number };
+  };
 }
 
 export interface PhotoBackup {
@@ -14,25 +28,36 @@ export interface PhotoBackup {
   dataUrl: string;
   timestamp: number;
   date: string;
+  projectId: string;
   aspectRatio?: 'video' | 'square' | 'portrait';
 }
 
 /**
  * Export photos to JSON file
  */
-export const exportBackup = async (photos: Photo[]): Promise<void> => {
-  if (photos.length === 0) {
-    throw new Error('내보낼 사진이 없습니다.');
+export const exportBackup = async (photos: readonly Photo[], projects: readonly Project[]): Promise<void> => {
+  if (photos.length === 0 && projects.length === 0) {
+    throw new Error('내보낼 데이터가 없습니다.');
   }
 
   const backupData: BackupData = {
-    version: '1.0.0',
+    version: '2.0.0',
     exportDate: Date.now(),
+    projects: projects.map((project) => ({
+      id: project.id,
+      name: project.name,
+      type: project.type,
+      createdAt: project.createdAt,
+      updatedAt: project.updatedAt,
+      coverPhotoId: project.coverPhotoId,
+      settings: project.settings,
+    })),
     photos: photos.map((photo) => ({
       id: photo.id,
       dataUrl: photo.dataUrl,
       timestamp: photo.timestamp,
       date: photo.date,
+      projectId: photo.projectId,
       aspectRatio: photo.aspectRatio,
     })),
   };
@@ -53,7 +78,7 @@ export const exportBackup = async (photos: Photo[]): Promise<void> => {
 /**
  * Import photos from JSON file
  */
-export const importBackup = (file: File): Promise<PhotoBackup[]> => {
+export const importBackup = (file: File): Promise<{ photos: PhotoBackup[]; projects: ProjectBackup[] }> => {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
 
@@ -67,8 +92,11 @@ export const importBackup = (file: File): Promise<PhotoBackup[]> => {
           throw new Error('잘못된 백업 파일 형식입니다.');
         }
 
-        resolve(backupData.photos);
-      } catch (error) {
+        resolve({
+          photos: backupData.photos,
+          projects: backupData.projects || [],
+        });
+      } catch {
         reject(new Error('백업 파일을 읽는 중 오류가 발생했습니다.'));
       }
     };
@@ -84,8 +112,8 @@ export const importBackup = (file: File): Promise<PhotoBackup[]> => {
 /**
  * Validate backup photo count
  */
-export const validateBackupSize = (photos: PhotoBackup[], maxSize = 100): boolean => {
-  return photos.length <= maxSize;
+export const validateBackupSize = (data: { photos: PhotoBackup[]; projects?: ProjectBackup[] }, maxSize = 100): boolean => {
+  return data.photos.length <= maxSize;
 };
 
 /**
@@ -93,11 +121,13 @@ export const validateBackupSize = (photos: PhotoBackup[], maxSize = 100): boolea
  */
 export const getBackupInfo = (backupData: BackupData): {
   photoCount: number;
+  projectCount: number;
   exportDate: string;
   version: string;
 } => {
   return {
     photoCount: backupData.photos.length,
+    projectCount: backupData.projects?.length || 0,
     exportDate: new Date(backupData.exportDate).toLocaleDateString('ko-KR', {
       year: 'numeric',
       month: 'long',

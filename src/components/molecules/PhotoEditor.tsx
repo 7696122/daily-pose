@@ -3,6 +3,8 @@ import { RotateCcw } from 'lucide-react';
 import { Slider } from '../atoms';
 import type { PhotoFilter, PhotoEditSettings } from '../../core/types';
 import { getFilterStyle, FILTER_OPTIONS, applyFiltersToImage } from '../../lib/utils/image-edit.utils';
+import { useLanguageStore } from '../../stores/useLanguageStore';
+import { t } from '../../lib/i18n';
 
 interface PhotoEditorProps {
   imageUrl: string;
@@ -12,6 +14,7 @@ interface PhotoEditorProps {
 }
 
 export const PhotoEditor = ({ imageUrl, onSave, onClose, initialSettings }: PhotoEditorProps) => {
+  const { language } = useLanguageStore();
   const [brightness, setBrightness] = useState(initialSettings?.brightness ?? 0);
   const [contrast, setContrast] = useState(initialSettings?.contrast ?? 0);
   const [filter, setFilter] = useState<PhotoFilter>(initialSettings?.filter ?? 'none');
@@ -22,8 +25,8 @@ export const PhotoEditor = ({ imageUrl, onSave, onClose, initialSettings }: Phot
     try {
       const editedImageUrl = await applyFiltersToImage(imageUrl, brightness, contrast, filter);
       onSave(editedImageUrl, { brightness, contrast, filter });
-    } catch (error) {
-      alert('이미지 저장에 실패했습니다.');
+    } catch {
+      alert(t('imageSaveError', language));
     }
   };
 

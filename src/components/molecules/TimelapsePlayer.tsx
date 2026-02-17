@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { Play, Pause } from 'lucide-react';
 import type { Photo } from '../../core/types';
 import { IconButton, Button } from '../atoms';
@@ -14,7 +14,7 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
   const [fps, setFps] = useState(10);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  const startInterval = () => {
+  const startInterval = useCallback(() => {
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
@@ -27,7 +27,7 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
         return prev + 1;
       });
     }, 1000 / fps);
-  };
+  }, [fps, photos.length]);
 
   const play = () => {
     setIsPlaying(true);
@@ -52,7 +52,7 @@ export const TimelapsePlayer = ({ photos, onClose }: TimelapsePlayerProps) => {
         clearInterval(intervalRef.current);
       }
     };
-  }, [fps]);
+  }, [fps, isPlaying, startInterval]);
 
   useEffect(() => {
     return () => {

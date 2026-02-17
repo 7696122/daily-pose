@@ -1,15 +1,18 @@
 import { useState } from 'react';
-import { Camera, Download, Play, Trash2, Settings, X, GitCompare, Edit, MessageSquare } from 'lucide-react';
-import { useAppStore } from '../../stores/useAppStore';
+import { Camera, Download, Play, Trash2, Settings, X, GitCompare, Edit, MessageSquare, Sparkles } from 'lucide-react';
+import { useNavigationStore, useGalleryStore, useLanguageStore } from '../../stores';
+import { t } from '../../lib/i18n';
 import type { Photo } from '../../types';
 import { deletePhoto, clearDatabase, updatePhoto } from '../../lib/indexedDB';
-import { downloadTimelapse } from '../../lib/timelapse';
+import { downloadTimelapse, createTimelapse, type InterpolationMode } from '../../lib/timelapse';
 import { IconButton } from '../atoms';
 import { GalleryGrid, TimelapsePlayer, CalendarHeatmap, BeforeAfterSlider, PhotoEditor, PhotoMetadataEditor } from '../molecules';
 import type { PhotoMetadata as PhotoMetadataType } from '../../core/types';
 
 export const GalleryPage = () => {
-  const { photos, setPhotos, setCurrentView, deletePhoto: deletePhotoFromStore } = useAppStore();
+  const { photos, setPhotos, deletePhoto: deletePhotoFromStore } = useGalleryStore();
+  const { setCurrentView } = useNavigationStore();
+  const { language } = useLanguageStore();
   const [selectedPhoto, setSelectedPhoto] = useState<Photo | null>(null);
   const [isPlayingTimelapse, setIsPlayingTimelapse] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
@@ -17,6 +20,10 @@ export const GalleryPage = () => {
   const [showBeforeAfter, setShowBeforeAfter] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<Photo | null>(null);
   const [editingMetadata, setEditingMetadata] = useState<Photo | null>(null);
+  const [showInterpolationOptions, setShowInterpolationOptions] = useState(false);
+  const [interpolationMode, setInterpolationMode] = useState<InterpolationMode>('crossfade');
+  const [interpolationFactor, setInterpolationFactor] = useState(2);
+  const [generationProgress, setGenerationProgress] = useState(0);
 
   // 사진 삭제
   const handleDeletePhoto = async (id: string) => {
@@ -26,22 +33,22 @@ export const GalleryPage = () => {
       if (selectedPhoto?.id === id) {
         setSelectedPhoto(null);
       }
-    } catch (error) {
-      alert('사진 삭제에 실패했습니다.');
+    } catch {
+      alert(t('deleteError', language));
     }
   };
 
   // 전체 삭제
   const handleDeleteAll = async () => {
-    if (!confirm('모든 사진을 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.')) return;
+    if (!confirm(t('deleteConfirm', language))) return;
 
     setIsDeletingAll(true);
     try {
       await clearDatabase();
       setPhotos([]);
       setSelectedPhoto(null);
-    } catch (error) {
-      alert('삭제에 실패했습니다.');
+    } catch {
+      alert(t('deleteAllError', language));
     } finally {
       setIsDeletingAll(false);
     }
@@ -50,60 +57,37 @@ export const GalleryPage = () => {
   // 타임랩스 다운로드
   const handleDownloadTimelapse = async () => {
     if (photos.length === 0) {
-      alert('다운로드할 사진이 없습니다.');
+      alert(t('noPhotosToDownload', language));
       return;
     }
 
-    setIsGenerating(true);
-    try {
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      if (!ctx) throw new Error('캔버스를 생성할 수 없습니다.');
-
-      const firstImage = await loadImage(photos[0].dataUrl);
-      canvas.width = firstImage.width;
-      canvas.height = firstImage.height;
-
-      const stream = canvas.captureStream(10);
-      const mediaRecorder = new MediaRecorder(stream, {
-        mimeType: 'video/webm;codecs=vp9',
-      });
-
-      const chunks: Blob[] = [];
-      mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) chunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = () => {
-        const blob = new Blob(chunks, { type: 'video/webm' });
-        downloadTimelapse(blob, `daily-pose-${new Date().toISOString().split('T')[0]}.webm`);
-        setIsGenerating(false);
-      };
-
-      mediaRecorder.start();
-
-      const frameDuration = 100;
-      for (const photo of photos) {
-        const img = await loadImage(photo.dataUrl);
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        await new Promise((resolve) => setTimeout(resolve, frameDuration));
-      }
-
-      mediaRecorder.stop();
-    } catch (error) {
-      console.error(error);
-      alert('타임랩스 생성에 실패했습니다.');
-      setIsGenerating(false);
-    }
+    setShowInterpolationOptions(true);
   };
 
-  const loadImage = (dataUrl: string): Promise<HTMLImageElement> => {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-      img.src = dataUrl;
-    });
+  // 타임랩스 생성 (보간 옵션 선택 후)
+  const generateTimelapse = async () => {
+    setShowInterpolationOptions(false);
+    setIsGenerating(true);
+    setGenerationProgress(0);
+
+    try {
+      const blob = await createTimelapse([...photos], {
+        fps: 30,
+        interpolation: interpolationMode,
+        interpolationFactor: interpolationFactor,
+        onProgress: (progress) => {
+          setGenerationProgress(progress);
+        },
+      });
+
+      downloadTimelapse(blob, `daily-pose-${new Date().toISOString().split('T')[0]}.webm`);
+    } catch (error) {
+      console.error(error);
+      alert(t('timelapseError', language));
+    } finally {
+      setIsGenerating(false);
+      setGenerationProgress(0);
+    }
   };
 
   // 사진 편집 저장
@@ -123,8 +107,8 @@ export const GalleryPage = () => {
       setPhotos(photos.map((p) => (p.id === editingPhoto.id ? updatedPhoto : p)));
       setSelectedPhoto(null);
       setEditingPhoto(null);
-    } catch (error) {
-      alert('사진 저장에 실패했습니다.');
+    } catch {
+      alert(t('photoSaveError', language));
     }
   };
 
@@ -142,8 +126,8 @@ export const GalleryPage = () => {
       setPhotos(photos.map((p) => (p.id === editingMetadata.id ? updatedPhoto : p)));
       setSelectedPhoto(null);
       setEditingMetadata(null);
-    } catch (error) {
-      alert('메타데이터 저장에 실패했습니다.');
+    } catch {
+      alert(t('metadataSaveError', language));
     }
   };
 
@@ -161,10 +145,99 @@ export const GalleryPage = () => {
         />
       )}
 
-      <div className="flex flex-col h-full bg-[#0a0a0a]">
+      {/* 보간 옵션 모달 */}
+      {showInterpolationOptions && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
+          <div className="bg-white dark:bg-gray-800 rounded-2xl p-6 max-w-sm w-full">
+            <div className="flex items-center gap-3 mb-4">
+              <Sparkles className="w-6 h-6 text-primary-500" />
+              <h3 className="text-lg font-bold text-gray-900 dark:text-white">보간 효과</h3>
+            </div>
+
+            {/* 보간 모드 선택 */}
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                보간 방식
+              </label>
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  onClick={() => setInterpolationMode('none')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    interpolationMode === 'none'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  없음
+                </button>
+                <button
+                  onClick={() => setInterpolationMode('crossfade')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    interpolationMode === 'crossfade'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  크로스페이드
+                </button>
+                <button
+                  onClick={() => setInterpolationMode('mci')}
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                    interpolationMode === 'mci'
+                      ? 'bg-primary-500 text-white'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'
+                  }`}
+                >
+                  AI 보간
+                </button>
+              </div>
+            </div>
+
+            {/* 보간 강도 */}
+            {interpolationMode !== 'none' && (
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  부드러움: {interpolationFactor}x
+                </label>
+                <input
+                  type="range"
+                  min="2"
+                  max="8"
+                  step="2"
+                  value={interpolationFactor}
+                  onChange={(e) => setInterpolationFactor(Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span>빠름</span>
+                  <span>부드러움</span>
+                </div>
+              </div>
+            )}
+
+            {/* 버튼 */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowInterpolationOptions(false)}
+                className="flex-1 py-3 px-4 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-xl font-medium"
+              >
+                취소
+              </button>
+              <button
+                onClick={generateTimelapse}
+                className="flex-1 py-3 px-4 bg-primary-500 text-white rounded-xl font-medium"
+              >
+                생성
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0a0a0a]">
         {/* iOS 스타일 헤더 */}
-        <div className="flex items-center justify-between px-4 py-3 bg-black/50 backdrop-blur-lg border-b border-white/10">
-          <h1 className="text-3xl font-bold">갤러리</h1>
+        <div className="flex items-center justify-between px-4 py-3 bg-white/80 dark:bg-black/50 backdrop-blur-lg border-b border-gray-200 dark:border-white/10">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('gallery', language)}</h1>
           <div className="flex items-center gap-2">
             {photos.length > 0 && (
               <IconButton
@@ -172,7 +245,7 @@ export const GalleryPage = () => {
                 size="sm"
                 onClick={handleDeleteAll}
                 disabled={isDeletingAll}
-                aria-label="전체 삭제"
+                aria-label={t('deleteAll', language)}
               >
                 <Trash2 />
               </IconButton>
@@ -181,7 +254,7 @@ export const GalleryPage = () => {
               variant="ghost"
               size="sm"
               onClick={() => setCurrentView('settings')}
-              aria-label="설정"
+              aria-label={t('settings', language)}
             >
               <Settings />
             </IconButton>
@@ -190,7 +263,7 @@ export const GalleryPage = () => {
 
         {/* 카운트 배지 */}
         {photos.length > 0 && (
-          <div className="px-4 py-3">
+          <div className="px-4 py-3 overflow-x-auto">
             <CalendarHeatmap
               photos={photos}
               onDateClick={(_date, dayPhotos) => {
@@ -213,14 +286,14 @@ export const GalleryPage = () => {
         </div>
 
         {/* 하단 액션 바 */}
-        <div className="border-t border-white/10 bg-black/50 backdrop-blur-lg">
+        <div className="border-t border-gray-200 dark:border-white/10 bg-white/80 dark:bg-black/50 backdrop-blur-lg">
           <div className="flex items-center justify-around py-safe-area-inset-top">
             <button
               onClick={() => setCurrentView('camera')}
               className="flex flex-col items-center gap-1 py-3 px-6 text-primary-500 active:opacity-60"
             >
               <Camera className="w-6 h-6" />
-              <span className="text-xs">카메라</span>
+              <span className="text-xs">{t('camera', language)}</span>
             </button>
 
             {photos.length >= 2 && (
@@ -230,7 +303,7 @@ export const GalleryPage = () => {
                   className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60"
                 >
                   <GitCompare className="w-6 h-6" />
-                  <span className="text-xs">비교</span>
+                  <span className="text-xs">{t('compare', language)}</span>
                 </button>
 
                 <button
@@ -238,16 +311,25 @@ export const GalleryPage = () => {
                   className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60"
                 >
                   <Play className="w-6 h-6" />
-                  <span className="text-xs">재생</span>
+                  <span className="text-xs">{t('play', language)}</span>
                 </button>
 
                 <button
                   onClick={handleDownloadTimelapse}
                   disabled={isGenerating}
-                  className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60 disabled:opacity-50"
+                  className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60 disabled:opacity-50 relative"
                 >
                   <Download className="w-6 h-6" />
-                  <span className="text-xs">{isGenerating ? '생성 중' : '다운로드'}</span>
+                  <span className="text-xs">
+                    {isGenerating
+                      ? generationProgress > 0
+                        ? `${Math.round(generationProgress)}%`
+                        : t('generating', language)
+                      : t('download', language)}
+                  </span>
+                  {isGenerating && (
+                    <div className="absolute inset-0 bg-primary-500/10 rounded-lg animate-pulse" />
+                  )}
                 </button>
               </>
             )}
@@ -261,7 +343,7 @@ export const GalleryPage = () => {
               className="absolute inset-0 bg-black/60"
               onClick={() => setSelectedPhoto(null)}
             />
-            <div className="relative bg-gray-900 w-full rounded-t-3xl p-6 pb-safe-area-inset-bottom transform transition-transform">
+            <div className="relative bg-white dark:bg-gray-900 w-full rounded-t-3xl p-6 pb-safe-area-inset-bottom transform transition-transform">
               {/* 핸들 */}
               <div className="w-12 h-1 bg-gray-700 rounded-full mx-auto mb-6" />
 
@@ -272,8 +354,8 @@ export const GalleryPage = () => {
                   className="w-24 h-14 object-cover rounded-2xl"
                 />
                 <div className="flex-1 min-w-0">
-                  <p className="text-white font-medium text-lg truncate">{selectedPhoto.date}</p>
-                  <p className="text-gray-400 text-sm">
+                  <p className="text-gray-900 dark:text-white font-medium text-lg truncate">{selectedPhoto.date}</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-sm">
                     {new Date(selectedPhoto.timestamp).toLocaleDateString('ko-KR', {
                       year: 'numeric',
                       month: 'long',
@@ -284,7 +366,7 @@ export const GalleryPage = () => {
                 <IconButton
                   variant="ghost"
                   onClick={() => setSelectedPhoto(null)}
-                  aria-label="닫기"
+                  aria-label={t('close', language)}
                 >
                   <X />
                 </IconButton>

@@ -1,4 +1,5 @@
-import type { IPhotoStorage, Photo } from '../core/types';
+import type { IProjectStorage, Project, ProjectCreateDTO } from '../core/types';
+import { createProjectId } from '../core/types/project.types';
 
 /**
  * IndexedDB Configuration
@@ -10,10 +11,10 @@ interface DBConfig {
 }
 
 /**
- * IndexedDB Client
- * Single Responsibility: Manage IndexedDB connection
+ * IndexedDB Client for Projects
+ * Single Responsibility: Manage IndexedDB connection for projects
  */
-class IndexedDBClient {
+class IndexedDBProjectClient {
   constructor(config: DBConfig) {
     this.config = config;
   }
@@ -29,26 +30,13 @@ class IndexedDBClient {
 
       request.onupgradeneeded = (event) => {
         const db = (event.target as IDBOpenDBRequest).result;
-        const oldVersion = event.oldVersion;
 
-        // Create store if it doesn't exist
+        // Create projects store if not exists (v3)
         if (!db.objectStoreNames.contains(this.config.storeName)) {
           const store = db.createObjectStore(this.config.storeName, { keyPath: 'id' });
-          store.createIndex('timestamp', 'timestamp', { unique: false });
-          store.createIndex('projectId', 'projectId', { unique: false });
-          console.log('Photos store created (v3)');
-        } else {
-          // Version 2 -> 3: Ensure projectId index exists
-          if (oldVersion < 3) {
-            const transaction = request.transaction;
-            if (transaction) {
-              const store = transaction.objectStore(this.config.storeName);
-              if (!store.indexNames.contains('projectId')) {
-                store.createIndex('projectId', 'projectId', { unique: false });
-                console.log('Added projectId index to photos store (v2->v3)');
-              }
-            }
-          }
+          store.createIndex('type', 'type', { unique: false });
+          store.createIndex('createdAt', 'createdAt', { unique: false });
+          console.log('Projects store created (v3)');
         }
       };
     });
@@ -60,29 +48,29 @@ class IndexedDBClient {
 }
 
 /**
- * IndexedDB Photo Storage Implementation
- * Single Responsibility: Photo CRUD operations
+ * IndexedDB Project Storage Implementation
+ * Single Responsibility: Project CRUD operations
  */
-export class IndexedDBPhotoStorage implements IPhotoStorage {
+export class IndexedDBProjectStorage implements IProjectStorage {
   private readonly config: DBConfig;
-  private readonly client: IndexedDBClient;
+  private readonly client: IndexedDBProjectClient;
 
   constructor(dbName?: string) {
     this.config = {
       name: dbName ?? import.meta.env.VITE_DB_NAME ?? 'DailyPoseDB',
       version: 3,
-      storeName: 'photos',
+      storeName: 'projects',
     };
-    this.client = new IndexedDBClient(this.config);
+    this.client = new IndexedDBProjectClient(this.config);
   }
 
-  async save(photo: Photo): Promise<void> {
+  async save(project: Project): Promise<void> {
     const db = await this.client.open();
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
-      const request = store.add(photo);
+      const request = store.add(project);
 
       request.onsuccess = () => {
         this.client.close(db);
@@ -95,7 +83,7 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
     });
   }
 
-  async findAll(): Promise<readonly Photo[]> {
+  async findAll(): Promise<readonly Project[]> {
     const db = await this.client.open();
 
     return new Promise((resolve, reject) => {
@@ -105,8 +93,8 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
 
       request.onsuccess = () => {
         this.client.close(db);
-        const photos = request.result.sort((a, b) => a.timestamp - b.timestamp);
-        resolve(photos);
+        const projects = request.result.sort((a, b) => a.createdAt - b.createdAt);
+        resolve(projects);
       };
       request.onerror = () => {
         this.client.close(db);
@@ -115,7 +103,7 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
     });
   }
 
-  async findById(id: string): Promise<Photo | null> {
+  async findById(id: string): Promise<Project | null> {
     const db = await this.client.open();
 
     return new Promise((resolve, reject) => {
@@ -126,27 +114,6 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
       request.onsuccess = () => {
         this.client.close(db);
         resolve(request.result ?? null);
-      };
-      request.onerror = () => {
-        this.client.close(db);
-        reject(request.error);
-      };
-    });
-  }
-
-  async findByProjectId(projectId: string): Promise<readonly Photo[]> {
-    const db = await this.client.open();
-
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([this.config.storeName], 'readonly');
-      const store = transaction.objectStore(this.config.storeName);
-      const index = store.index('projectId');
-      const request = index.getAll(projectId);
-
-      request.onsuccess = () => {
-        this.client.close(db);
-        const photos = request.result.sort((a, b) => a.timestamp - b.timestamp);
-        resolve(photos);
       };
       request.onerror = () => {
         this.client.close(db);
@@ -174,13 +141,13 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
     });
   }
 
-  async update(photo: Photo): Promise<void> {
+  async update(project: Project): Promise<void> {
     const db = await this.client.open();
 
     return new Promise((resolve, reject) => {
       const transaction = db.transaction([this.config.storeName], 'readwrite');
       const store = transaction.objectStore(this.config.storeName);
-      const request = store.put(photo);
+      const request = store.put(project);
 
       request.onsuccess = () => {
         this.client.close(db);
@@ -193,27 +160,29 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
     });
   }
 
-  async clear(): Promise<void> {
-    const db = await this.client.open();
+  async create(dto: ProjectCreateDTO): Promise<Project> {
+    const now = Date.now();
+    const id = createProjectId(now);
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([this.config.storeName], 'readwrite');
-      const store = transaction.objectStore(this.config.storeName);
-      const request = store.clear();
+    const project: Project = {
+      id,
+      name: dto.name,
+      type: dto.type,
+      createdAt: now,
+      updatedAt: now,
+      coverPhotoId: dto.coverPhotoId,
+      settings: {
+        reminderEnabled: dto.settings?.reminderEnabled ?? false,
+        reminderTime: dto.settings?.reminderTime,
+      },
+    };
 
-      request.onsuccess = () => {
-        this.client.close(db);
-        resolve();
-      };
-      request.onerror = () => {
-        this.client.close(db);
-        reject(request.error);
-      };
-    });
+    await this.save(project);
+    return project;
   }
 }
 
 /**
  * Singleton instance
  */
-export const photoStorage = new IndexedDBPhotoStorage();
+export const projectStorage = new IndexedDBProjectStorage();

@@ -3,6 +3,8 @@ import type { MouseEvent, TouchEvent } from 'react';
 import { X } from 'lucide-react';
 import type { Photo } from '../../types';
 import { IconButton } from '../atoms/IconButton';
+import { useLanguageStore } from '../../stores/useLanguageStore';
+import { t } from '../../lib/i18n';
 
 interface BeforeAfterSliderProps {
   beforePhoto: Photo;
@@ -15,6 +17,7 @@ export const BeforeAfterSlider = ({
   afterPhoto,
   onClose,
 }: BeforeAfterSliderProps) => {
+  const { language } = useLanguageStore();
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -59,7 +62,7 @@ export const BeforeAfterSlider = ({
           <div className="text-center flex-1">
             <h2 className="text-xl font-bold text-white">비포 & 애프터</h2>
             <p className="text-sm text-gray-400">
-              {daysDiff > 0 ? `${daysDiff}일의 변화` : '당일 비교'}
+              {daysDiff > 0 ? `${daysDiff}${t('daysChange', language)}` : t('sameDay', language)}
             </p>
           </div>
           <IconButton variant="ghost" onClick={onClose} aria-label="닫기">

@@ -1,8 +1,10 @@
 // Individual stores following Single Responsibility Principle
 export { useCameraStore } from './useCameraStore';
 export { useGalleryStore } from './useGalleryStore';
+export { useLanguageStore } from './useLanguageStore';
 export { useNavigationStore } from './useNavigationStore';
 export { useOverlayStore } from './useOverlayStore';
+export { useProjectStore } from './useProjectStore';
 
 // Legacy store for backward compatibility (can be deprecated)
 import { create } from 'zustand';

@@ -50,6 +50,7 @@ export interface Photo {
   readonly dataUrl: string;
   readonly timestamp: number;
   readonly date: string;
+  readonly projectId: string;
   readonly aspectRatio?: 'video' | 'square' | 'portrait';
   readonly editSettings?: PhotoEditSettings;
   readonly metadata?: PhotoMetadata;
@@ -62,6 +63,7 @@ export interface PhotoCreateDTO {
   readonly dataUrl: string;
   readonly timestamp: number;
   readonly date: string;
+  readonly projectId: string;
   readonly aspectRatio: 'video' | 'square' | 'portrait';
   readonly editSettings?: PhotoEditSettings;
   readonly metadata?: PhotoMetadata;

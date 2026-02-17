@@ -6,13 +6,13 @@ import { create } from 'zustand';
  */
 interface NavigationState {
   // State
-  currentView: 'camera' | 'gallery' | 'settings';
-  previousView: 'camera' | 'gallery' | 'settings' | null;
+  currentView: 'camera' | 'gallery' | 'settings' | 'home' | 'stats' | 'project-select' | 'project-create';
+  previousView: 'camera' | 'gallery' | 'settings' | 'home' | 'stats' | 'project-select' | 'project-create' | null;
   isTimelapsePlaying: boolean;
   isRecording: boolean;
 
   // Actions
-  setCurrentView: (view: 'camera' | 'gallery' | 'settings') => void;
+  setCurrentView: (view: 'camera' | 'gallery' | 'settings' | 'home' | 'stats' | 'project-select' | 'project-create') => void;
   goBack: () => void;
   setTimelapsePlaying: (playing: boolean) => void;
   setRecording: (recording: boolean) => void;
@@ -20,7 +20,7 @@ interface NavigationState {
 
 export const useNavigationStore = create<NavigationState>((set) => ({
   // Initial state
-  currentView: 'camera',
+  currentView: 'home',
   previousView: null,
   isTimelapsePlaying: false,
   isRecording: false,
@@ -39,7 +39,7 @@ export const useNavigationStore = create<NavigationState>((set) => ({
 
   goBack: () =>
     set((state) => ({
-      currentView: state.previousView || 'camera',
+      currentView: state.previousView || 'home',
       previousView: null,
     })),
 

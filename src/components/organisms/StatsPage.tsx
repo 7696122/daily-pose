@@ -1,6 +1,8 @@
 import { useMemo } from 'react';
-import { Flame, Calendar, Trophy, TrendingUp, CalendarDays, BarChart3 } from 'lucide-react';
+import { Flame, Trophy, TrendingUp, CalendarDays, BarChart3 } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
+import { useLanguageStore } from '../../stores/useLanguageStore';
+import { t } from '../../lib/i18n';
 import { formatDateKey, parseDateKey, getDayName } from '../../lib/utils/date.utils';
 
 interface MonthData {
@@ -18,6 +20,7 @@ interface WeekdayData {
 
 export const StatsPage = () => {
   const { photos } = useAppStore();
+  const { language } = useLanguageStore();
 
   // 통계 계산
   const stats = useMemo(() => {
@@ -33,7 +36,7 @@ export const StatsPage = () => {
 
     // 스트릭 계산
     let streak = 0;
-    let checkDate = new Date(today);
+    const checkDate = new Date(today);
 
     while (true) {
       const checkKey = formatDateKey(checkDate);
@@ -94,7 +97,7 @@ export const StatsPage = () => {
     }
 
     if (firstPhotoDate) {
-      let currentDate = new Date(firstPhotoDate);
+      const currentDate = new Date(firstPhotoDate);
       currentDate.setDate(1);
 
       while (currentDate <= today) {
@@ -145,156 +148,138 @@ export const StatsPage = () => {
   const maxWeekdayCount = Math.max(...stats.weekdayData.map((d) => d.count), 1);
 
   return (
-    <div className="flex flex-col h-full bg-[#0a0a0a]">
+    <div className="flex flex-col h-full bg-gray-50 dark:bg-[#0a0a0a]">
       {/* 헤더 */}
-      <div className="px-4 pt-12 pb-4 bg-black/50">
-        <h1 className="text-3xl font-bold text-white mb-1">📈 통계</h1>
-        <p className="text-gray-500 text-sm">기록을 분석하세요</p>
+      <div className="px-4 py-3 bg-white/80 dark:bg-black/50 backdrop-blur-lg border-b border-gray-200 dark:border-white/10">
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white">{t('stats', language)}</h1>
       </div>
 
       {/* 스크롤 가능한 콘텐츠 */}
-      <div className="flex-1 overflow-auto px-4 pb-safe-area-inset-bottom">
-        {/* 메트릭 카드 그리드 */}
-        <div className="grid grid-cols-2 gap-3 mb-4">
-          {/* 현재 스트릭 */}
-          <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 rounded-2xl p-4 border border-orange-500/20">
-            <div className="flex items-center gap-2 mb-2">
-              <Flame className="w-5 h-5 text-orange-500" />
-              <p className="text-gray-400 text-xs">연속 기록</p>
+      <div className="flex-1 overflow-auto">
+        <div className="px-4 py-4 space-y-4 pb-safe-area-inset-bottom">
+          {/* 주요 지표 - 큰 카드 */}
+          <div className="bg-gradient-to-br from-orange-500/20 to-orange-600/10 rounded-3xl p-6 border border-orange-500/20">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/20 flex items-center justify-center">
+                <Flame className="w-6 h-6 text-orange-500" />
+              </div>
+              <div>
+                <p className="text-gray-600 dark:text-gray-400 text-sm">{t('currentStreak', language)}</p>
+                <p className="text-gray-900 dark:text-white text-4xl font-bold">{stats.streak}<span className="text-xl text-gray-600 dark:text-gray-400 ml-1">{t('days', language)}</span></p>
+              </div>
             </div>
-            <p className="text-white text-3xl font-bold">{stats.streak}</p>
-            <p className="text-gray-500 text-xs mt-1">일</p>
-          </div>
-
-          {/* 최장 스트릭 */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Trophy className="w-5 h-5 text-yellow-500" />
-              <p className="text-gray-400 text-xs">최장 기록</p>
-            </div>
-            <p className="text-white text-3xl font-bold">{stats.longestStreak}</p>
-            <p className="text-gray-500 text-xs mt-1">일</p>
-          </div>
-
-          {/* 총 기록 일수 */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <CalendarDays className="w-5 h-5 text-blue-400" />
-              <p className="text-gray-400 text-xs">총 기록</p>
-            </div>
-            <p className="text-white text-3xl font-bold">{stats.uniqueDays}</p>
-            <p className="text-gray-500 text-xs mt-1">일</p>
-          </div>
-
-          {/* 활동률 */}
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <TrendingUp className="w-5 h-5 text-green-400" />
-              <p className="text-gray-400 text-xs">활동률</p>
-            </div>
-            <p className="text-white text-3xl font-bold">{stats.activityRate}</p>
-            <p className="text-gray-500 text-xs mt-1">%</p>
-          </div>
-        </div>
-
-        {/* 월별 차트 */}
-        {stats.monthlyData.length > 0 && (
-          <div className="mb-4 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex items-center justify-between mb-4">
-              <p className="text-white font-semibold">월별 기록</p>
-              <BarChart3 className="w-5 h-5 text-gray-500" />
-            </div>
-            <div className="flex items-end gap-1 h-32">
-              {stats.monthlyData.map((data) => {
-                const height = data.count > 0 ? Math.max((data.count / maxMonthlyCount) * 100, 5) : 0;
-                return (
-                  <div key={`${data.year}-${data.month}`} className="flex-1 flex flex-col items-center gap-2">
-                    <div className="w-full relative group">
-                      <div
-                        className="w-full bg-primary-600 rounded-t-sm transition-all"
-                        style={{ height: `${height}%` }}
-                      />
-                      {/* Tooltip */}
-                      {data.count > 0 && (
-                        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
-                          {data.label}: {data.count}장
-                        </div>
-                      )}
-                    </div>
-                    <span className="text-[9px] text-gray-600">{data.label}</span>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 요일별 패턴 */}
-        <div className="mb-4 bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-          <div className="flex items-center justify-between mb-4">
-            <p className="text-white font-semibold">요일별 패턴</p>
-            {stats.mostActiveDay.count > 0 && (
-              <span className="text-xs text-gray-500">
-                {stats.mostActiveDay.label}에 가장 활발
-              </span>
+            {stats.streak > 0 && (
+              <p className="text-orange-400/80 text-sm">🔥 {t('keepGoing', language)}</p>
             )}
           </div>
-          <div className="flex items-end gap-2 h-20">
-            {stats.weekdayData.map((data) => {
-              const height = data.count > 0 ? Math.max((data.count / maxWeekdayCount) * 100, 10) : 5;
-              const isMostActive = data.day === stats.mostActiveDay.day && stats.mostActiveDay.count > 0;
-              return (
-                <div key={data.day} className="flex-1 flex flex-col items-center gap-2">
-                  <div className="w-full relative group">
-                    <div
-                      className={`w-full rounded-t-sm transition-all ${
-                        isMostActive ? 'bg-primary-500' : 'bg-primary-600/50'
-                      }`}
-                      style={{ height: `${height}%` }}
-                    />
-                    {data.count > 0 && (
-                      <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 px-2 py-1 bg-gray-900 text-white text-[10px] rounded opacity-0 group-hover:opacity-100 transition-opacity">
-                        {data.count}장
-                      </div>
-                    )}
-                  </div>
-                  <span className={`text-[10px] ${isMostActive ? 'text-primary-500 font-medium' : 'text-gray-600'}`}>
-                    {data.label}
+
+          {/* 3개 지표 그리드 */}
+          <div className="grid grid-cols-3 gap-3">
+            <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <Trophy className="w-5 h-5 text-yellow-500 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.longestStreak}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-500 mt-1">{t('longestStreak', language)}</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <CalendarDays className="w-5 h-5 text-blue-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.uniqueDays}</p>
+              <p className="text-xs text-gray-600 dark:text-gray-500 mt-1">{t('totalDays', language)}</p>
+            </div>
+            <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-4 text-center">
+              <TrendingUp className="w-5 h-5 text-green-400 mx-auto mb-2" />
+              <p className="text-2xl font-bold text-gray-900 dark:text-white">{stats.activityRate}%</p>
+              <p className="text-xs text-gray-600 dark:text-gray-500 mt-1">{t('activityRate', language)}</p>
+            </div>
+          </div>
+
+          {/* 요일별 패턴 */}
+          {photos.length > 0 && (
+            <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900 dark:text-white font-semibold">{t('weeklyActivity', language)}</h3>
+                {stats.mostActiveDay.count > 0 && (
+                  <span className="text-xs text-primary-400 bg-primary-500/10 px-2 py-1 rounded-full">
+                    {stats.mostActiveDay.label}요일 {t('mostActive', language)}
                   </span>
+                )}
+              </div>
+              <div className="flex items-end justify-between gap-2 h-32">
+                {stats.weekdayData.map((data) => {
+                  const height = data.count > 0 ? Math.max((data.count / maxWeekdayCount) * 100, 10) : 5;
+                  const isMostActive = data.day === stats.mostActiveDay.day && stats.mostActiveDay.count > 0;
+                  return (
+                    <div key={data.day} className="flex-1 flex flex-col items-center gap-2">
+                      <div className="w-full relative group">
+                        <div
+                          className={`w-full rounded-t-lg transition-all ${
+                            isMostActive ? 'bg-primary-500' : 'bg-white/20'
+                          }`}
+                          style={{ height: `${height}%` }}
+                        />
+                        {data.count > 0 && (
+                          <div className="absolute -top-6 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                              {data.count}{t('photos', language)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      <span className={`text-xs ${isMostActive ? 'text-primary-400 font-semibold' : 'text-gray-600 dark:text-gray-500'}`}>
+                        {data.label}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 월별 추이 */}
+          {stats.monthlyData.length > 1 && (
+            <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-gray-900 dark:text-white font-semibold">{t('monthlyTrend', language)}</h3>
+                <BarChart3 className="w-5 h-5 text-gray-600 dark:text-gray-500" />
+              </div>
+              <div className="overflow-x-auto -mx-2 px-2">
+                <div className="flex items-end gap-2 h-32 min-w-max">
+                  {stats.monthlyData.slice(-12).map((data) => {
+                    const height = data.count > 0 ? Math.max((data.count / maxMonthlyCount) * 100, 8) : 4;
+                    return (
+                      <div key={`${data.year}-${data.month}`} className="flex flex-col items-center gap-2 min-w-[32px]">
+                        <div className="w-full relative group">
+                          <div
+                            className="w-full bg-gradient-to-t from-primary-600 to-primary-400 rounded-t-lg transition-all"
+                            style={{ height: `${height}%` }}
+                          />
+                          {data.count > 0 && (
+                            <div className="absolute -top-8 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity">
+                              <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
+                                {data.label}: {data.count}{t('photos', language)}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-gray-700 dark:text-gray-600">{data.label}</span>
+                      </div>
+                    );
+                  })}
                 </div>
-              );
-            })}
+              </div>
+            </div>
+          )}
+
+          {/* 총 사진 수 */}
+          <div className="bg-gray-100 dark:bg-white/5 backdrop-blur-sm rounded-2xl p-5 text-center">
+            <p className="text-gray-600 dark:text-gray-400 text-sm mb-2">{t('totalPhotos', language)}</p>
+            <p className="text-gray-900 dark:text-white text-5xl font-bold">{photos.length}</p>
+            {stats.firstPhotoDate && (
+              <p className="text-gray-600 dark:text-gray-500 text-xs mt-3">
+                {stats.firstPhotoDate.getFullYear()}.{stats.firstPhotoDate.getMonth() + 1}.{stats.firstPhotoDate.getDate()} {t('started', language)}
+              </p>
+            )}
           </div>
         </div>
-
-        {/* 시작일 정보 */}
-        {stats.firstPhotoDate && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-2">
-              <Calendar className="w-5 h-5 text-purple-400" />
-              <p className="text-gray-400 text-sm">기록 시작일</p>
-            </div>
-            <p className="text-white text-lg font-semibold">
-              {stats.firstPhotoDate.toLocaleDateString('ko-KR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-              })}
-            </p>
-            <p className="text-gray-500 text-xs mt-1">
-              {stats.totalDays}일째 기록 중
-            </p>
-          </div>
-        )}
-
-        {/* 데이터 없음 */}
-        {photos.length === 0 && (
-          <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-8 text-center">
-            <BarChart3 className="w-12 h-12 text-gray-600 mx-auto mb-4" />
-            <p className="text-gray-500">아직 기록이 없습니다</p>
-            <p className="text-gray-600 text-sm mt-2">첫 사진을 찍고 통계를 확인해보세요</p>
-          </div>
-        )}
       </div>
     </div>
   );
