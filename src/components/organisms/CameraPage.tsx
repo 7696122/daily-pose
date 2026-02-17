@@ -12,6 +12,7 @@ const ASPECT_RATIO = 'video' as const;
 
 export const CameraPage = () => {
   const [isCapturing, setIsCapturing] = useState(false);
+  const [showGrid, setShowGrid] = useState(false);
 
   const {
     stream,
@@ -142,6 +143,8 @@ export const CameraPage = () => {
               aspectRatio={ASPECT_RATIO}
               facingMode={facingMode}
               fullscreen={true}
+              showGrid={showGrid}
+              onToggleGrid={() => setShowGrid(!showGrid)}
             />
           </div>
 

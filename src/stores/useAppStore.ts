@@ -8,8 +8,8 @@ interface AppStore {
   isCameraActive: boolean;
   stream: MediaStream | null;
   overlayOpacity: number;
-  currentView: 'camera' | 'gallery' | 'settings';
-  previousView: 'camera' | 'gallery' | 'settings' | null;
+  currentView: 'home' | 'camera' | 'gallery' | 'settings' | 'stats';
+  previousView: 'home' | 'camera' | 'gallery' | 'settings' | 'stats' | null;
   isRecording: boolean;
   isTimelapsePlaying: boolean;
   facingMode: 'user' | 'environment';
@@ -22,7 +22,7 @@ interface AppStore {
   setCameraActive: (active: boolean) => void;
   setStream: (stream: MediaStream | null) => void;
   setOverlayOpacity: (opacity: number) => void;
-  setCurrentView: (view: 'camera' | 'gallery' | 'settings') => void;
+  setCurrentView: (view: 'home' | 'camera' | 'gallery' | 'settings' | 'stats') => void;
   goBack: () => void;
   setRecording: (recording: boolean) => void;
   setTimelapsePlaying: (playing: boolean) => void;
@@ -38,7 +38,7 @@ export const useAppStore = create<AppStore>((set) => ({
   isCameraActive: false,
   stream: null,
   overlayOpacity: 0.5,
-  currentView: 'camera',
+  currentView: 'home',
   previousView: null,
   isRecording: false,
   isTimelapsePlaying: false,

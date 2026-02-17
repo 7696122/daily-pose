@@ -1,6 +1,8 @@
+import { useMemo } from 'react';
 import type { Photo } from '../../core/types';
 import { X } from 'lucide-react';
 import { IconButton } from '../atoms';
+import { formatDateKey, parseDateKey, isSameDay } from '../../lib/utils/date.utils';
 
 interface GalleryGridProps {
   photos: readonly Photo[];
@@ -9,7 +11,58 @@ interface GalleryGridProps {
   onDelete: (id: string) => void;
 }
 
+interface PhotoGroup {
+  date: string;
+  label: string;
+  photos: Photo[];
+}
+
 export const GalleryGrid = ({ photos, selectedId, onSelect, onDelete }: GalleryGridProps) => {
+  // 날짜별 그룹화
+  const groupedPhotos = useMemo(() => {
+    const groups = new Map<string, Photo[]>();
+
+    for (const photo of photos) {
+      const dateKey = formatDateKey(new Date(photo.timestamp));
+      const existing = groups.get(dateKey) || [];
+      groups.set(dateKey, [...existing, photo]);
+    }
+
+    // 정렬 및 라벨 생성
+    const result: PhotoGroup[] = [];
+    for (const [dateKey, groupPhotos] of groups.entries()) {
+      const date = parseDateKey(dateKey);
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      let label = '';
+      if (isSameDay(date, today)) {
+        label = '오늘';
+      } else {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (isSameDay(date, yesterday)) {
+          label = '어제';
+        } else {
+          label = date.toLocaleDateString('ko-KR', {
+            month: 'long',
+            day: 'numeric',
+            weekday: 'short',
+          });
+        }
+      }
+
+      result.push({
+        date: dateKey,
+        label,
+        photos: groupPhotos,
+      });
+    }
+
+    // 최신 날짜부터 정렬
+    return result.sort((a, b) => b.date.localeCompare(a.date));
+  }, [photos]);
+
   if (photos.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-gray-500">
@@ -25,33 +78,46 @@ export const GalleryGrid = ({ photos, selectedId, onSelect, onDelete }: GalleryG
   }
 
   return (
-    <div className="grid grid-cols-3 gap-1 -mx-4">
-      {photos.map((photo) => (
-        <div
-          key={photo.id}
-          className="aspect-video relative cursor-pointer active:opacity-70"
-          onClick={() => onSelect(photo)}
-        >
-          <img
-            src={photo.dataUrl}
-            alt={photo.date}
-            className="w-full h-full object-cover"
-          />
-          {selectedId === photo.id && (
-            <div className="absolute inset-0 bg-primary-500/30 border-4 border-primary-500" />
-          )}
-          <IconButton
-            variant="glass"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation();
-              onDelete(photo.id);
-            }}
-            aria-label="사진 삭제"
-            className="absolute top-1 right-1 bg-black/50 hover:bg-black/70"
-          >
-            <X />
-          </IconButton>
+    <div className="space-y-4">
+      {groupedPhotos.map((group) => (
+        <div key={group.date}>
+          {/* 날짜 헤더 */}
+          <div className="sticky top-0 z-10 bg-[#0a0a0a]/95 backdrop-blur-sm px-2 py-2 mb-2">
+            <h3 className="text-white font-semibold text-sm">{group.label}</h3>
+            <p className="text-gray-500 text-xs">{group.photos.length}장</p>
+          </div>
+
+          {/* 사진 그리드 */}
+          <div className="grid grid-cols-3 gap-1">
+            {group.photos.map((photo) => (
+              <div
+                key={photo.id}
+                className="aspect-video relative cursor-pointer active:opacity-70 rounded-lg overflow-hidden"
+                onClick={() => onSelect(photo)}
+              >
+                <img
+                  src={photo.dataUrl}
+                  alt={photo.date}
+                  className="w-full h-full object-cover"
+                />
+                {selectedId === photo.id && (
+                  <div className="absolute inset-0 bg-primary-500/30 border-2 border-primary-500 rounded-lg" />
+                )}
+                <IconButton
+                  variant="glass"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(photo.id);
+                  }}
+                  aria-label="사진 삭제"
+                  className="absolute top-1 right-1 bg-black/50 hover:bg-black/70"
+                >
+                  <X />
+                </IconButton>
+              </div>
+            ))}
+          </div>
         </div>
       ))}
     </div>

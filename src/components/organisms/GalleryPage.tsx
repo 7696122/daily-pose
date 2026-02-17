@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { Camera, Download, Play, Trash2, Settings, X } from 'lucide-react';
+import { Camera, Download, Play, Trash2, Settings, X, GitCompare } from 'lucide-react';
 import { useAppStore } from '../../stores/useAppStore';
 import type { Photo } from '../../types';
 import { deletePhoto, clearDatabase } from '../../lib/indexedDB';
 import { downloadTimelapse } from '../../lib/timelapse';
 import { IconButton } from '../atoms';
-import { GalleryGrid, TimelapsePlayer } from '../molecules';
+import { GalleryGrid, TimelapsePlayer, CalendarHeatmap, BeforeAfterSlider } from '../molecules';
 
 export const GalleryPage = () => {
   const { photos, setPhotos, setCurrentView, deletePhoto: deletePhotoFromStore } = useAppStore();
@@ -13,6 +13,7 @@ export const GalleryPage = () => {
   const [isPlayingTimelapse, setIsPlayingTimelapse] = useState(false);
   const [isDeletingAll, setIsDeletingAll] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [showBeforeAfter, setShowBeforeAfter] = useState(false);
 
   // 사진 삭제
   const handleDeletePhoto = async (id: string) => {
@@ -108,6 +109,14 @@ export const GalleryPage = () => {
         <TimelapsePlayer photos={photos} onClose={() => setIsPlayingTimelapse(false)} />
       )}
 
+      {showBeforeAfter && photos.length >= 2 && (
+        <BeforeAfterSlider
+          beforePhoto={photos[0]}
+          afterPhoto={photos[photos.length - 1]}
+          onClose={() => setShowBeforeAfter(false)}
+        />
+      )}
+
       <div className="flex flex-col h-full bg-[#0a0a0a]">
         {/* iOS 스타일 헤더 */}
         <div className="flex items-center justify-between px-4 py-3 bg-black/50 backdrop-blur-lg border-b border-white/10">
@@ -137,8 +146,15 @@ export const GalleryPage = () => {
 
         {/* 카운트 배지 */}
         {photos.length > 0 && (
-          <div className="px-4 py-2">
-            <p className="text-gray-500 text-sm">{photos.length}장의 사진</p>
+          <div className="px-4 py-3">
+            <CalendarHeatmap
+              photos={photos}
+              onDateClick={(_date, dayPhotos) => {
+                if (dayPhotos.length > 0) {
+                  setSelectedPhoto(dayPhotos[0]);
+                }
+              }}
+            />
           </div>
         )}
 
@@ -165,6 +181,14 @@ export const GalleryPage = () => {
 
             {photos.length >= 2 && (
               <>
+                <button
+                  onClick={() => setShowBeforeAfter(true)}
+                  className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60"
+                >
+                  <GitCompare className="w-6 h-6" />
+                  <span className="text-xs">비교</span>
+                </button>
+
                 <button
                   onClick={() => setIsPlayingTimelapse(true)}
                   className="flex flex-col items-center gap-1 py-3 px-6 text-gray-400 active:text-white active:opacity-60"
