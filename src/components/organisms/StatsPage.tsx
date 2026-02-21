@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Flame, Trophy, TrendingUp, CalendarDays, BarChart3 } from 'lucide-react';
-import { useAppStore } from '../../stores/useAppStore';
-import { useLanguageStore } from '../../stores/useLanguageStore';
+import { useGalleryStore } from '../../stores';
+import { useLanguageStore } from '../../stores';
 import { t } from '../../lib/i18n';
 import { formatDateKey, parseDateKey, getDayName } from '../../lib/utils/date.utils';
 
@@ -19,7 +19,7 @@ interface WeekdayData {
 }
 
 export const StatsPage = () => {
-  const { photos } = useAppStore();
+  const { photos } = useGalleryStore();
   const { language } = useLanguageStore();
 
   // 통계 계산

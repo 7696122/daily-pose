@@ -8,7 +8,7 @@ import { photoStorage, projectStorage } from './services';
 import type { Photo } from './core/types';
 
 // Database version for migration detection
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 const MIGRATION_KEY = 'dailypose_db_version';
 
 function App() {
@@ -21,6 +21,21 @@ function App() {
   // 앱 시작 시 다크 모드 고정
   useEffect(() => {
     document.documentElement.classList.add('dark');
+  }, []);
+
+  // DB 초기화 체크 (다른 탭 닫기 후 리로드 시)
+  useEffect(() => {
+    const shouldResetDB = sessionStorage.getItem('resetDB');
+    if (shouldResetDB === 'true') {
+      const dbName = import.meta.env.VITE_DB_NAME || 'DailyPoseDB';
+      sessionStorage.removeItem('resetDB');
+
+      // Delete database before app initializes
+      indexedDB.deleteDatabase(dbName).onsuccess = () => {
+        console.log('Database deleted, reloading...');
+        window.location.reload();
+      };
+    }
   }, []);
 
   // 앱 시작 시 데이터 로드 및 마이그레이션

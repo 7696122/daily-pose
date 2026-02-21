@@ -4,7 +4,7 @@ import { useNavigationStore, useGalleryStore, useCameraStore, useOverlayStore, u
 import { t } from '../../lib/i18n';
 import { startCamera, stopCamera, capturePhoto } from '../../lib/camera';
 import { savePhoto } from '../../lib/indexedDB';
-import { formatDate } from '../../lib/utils';
+import { formatDate } from '../../lib/utils/date.utils';
 import { OverlayCamera } from '../molecules';
 import { Button } from '../atoms';
 
@@ -84,6 +84,7 @@ export const CameraPage = () => {
 
       if (!currentProjectId) {
         alert('프로젝트를 선택해주세요.');
+        setIsCapturing(false);
         return;
       }
 
@@ -96,13 +97,16 @@ export const CameraPage = () => {
         aspectRatio: ASPECT_RATIO,
       };
 
+      console.log('Saving photo:', { id: photo.id, dataUrlSize: dataUrl.length });
       await savePhoto(photo);
       addPhoto(photo);
+      console.log('Photo saved successfully');
 
       await new Promise((resolve) => setTimeout(resolve, 200));
     } catch (error) {
-      alert(t('photoSaveError', language));
-      console.error(error);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.error('Photo save error:', errorMessage, error);
+      alert(`사진 저장 실패: ${errorMessage}`);
     } finally {
       setIsCapturing(false);
     }

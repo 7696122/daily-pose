@@ -100,3 +100,26 @@ export const getVideoDimensions = (video: HTMLVideoElement): Dimensions => ({
   width: video.videoWidth,
   height: video.videoHeight,
 });
+
+/**
+ * Limit dimensions to max size while maintaining aspect ratio
+ * @pure
+ */
+export const limitDimensions = (
+  dimensions: Dimensions,
+  maxSize: number = 1920
+): Dimensions => {
+  const { width, height } = dimensions;
+
+  // If both dimensions are within limit, return as-is
+  if (width <= maxSize && height <= maxSize) {
+    return { width, height };
+  }
+
+  // Calculate scale factor
+  const scale = Math.min(maxSize / width, maxSize / height);
+  return {
+    width: Math.round(width * scale),
+    height: Math.round(height * scale),
+  };
+};

@@ -12,7 +12,7 @@ const photoStorageInstance = new IndexedDBPhotoStorage();
 export const openDB = async (): Promise<IDBDatabase> => {
   const request = indexedDB.open(
     import.meta.env.VITE_DB_NAME || 'DailyPoseDB',
-    1
+    4  // Match IndexedDBPhotoStorage version
   );
 
   return new Promise((resolve, reject) => {
@@ -24,6 +24,7 @@ export const openDB = async (): Promise<IDBDatabase> => {
       if (!db.objectStoreNames.contains('photos')) {
         const store = db.createObjectStore('photos', { keyPath: 'id' });
         store.createIndex('timestamp', 'timestamp', { unique: false });
+        store.createIndex('projectId', 'projectId', { unique: false });
       }
     };
   });
@@ -47,6 +48,37 @@ export const updatePhoto = async (photo: Photo): Promise<void> => {
 
 export const clearDatabase = async (): Promise<void> => {
   await photoStorageInstance.clear();
+};
+
+/**
+ * Reset database by deleting and recreating
+ * Use this when database structure is corrupted
+ */
+export const resetDatabase = async (): Promise<void> => {
+  const dbName = import.meta.env.VITE_DB_NAME || 'DailyPoseDB';
+
+  // Close all existing connections first
+  const dbs = await indexedDB.databases();
+  for (const db of dbs) {
+    if (db.name === dbName) {
+      // Close connection by opening and immediately closing
+    }
+  }
+
+  // Delete database
+  await new Promise<void>((resolve, reject) => {
+    const request = indexedDB.deleteDatabase(dbName);
+    request.onsuccess = () => resolve();
+    request.onerror = () => reject(request.error);
+    request.onblocked = () => {
+      console.warn('Database delete blocked - reloading page');
+      // If blocked, reload and try again via sessionStorage
+      sessionStorage.setItem('resetDB', 'true');
+      window.location.reload();
+    };
+  });
+
+  console.log('Database reset complete');
 };
 
 // Export singleton instance for direct use

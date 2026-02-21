@@ -70,29 +70,49 @@ export class IndexedDBPhotoStorage implements IPhotoStorage {
   constructor(dbName?: string) {
     this.config = {
       name: dbName ?? import.meta.env.VITE_DB_NAME ?? 'DailyPoseDB',
-      version: 3,
+      version: 4,  // Incremented to force object store recreation
       storeName: 'photos',
     };
     this.client = new IndexedDBClient(this.config);
   }
 
   async save(photo: Photo): Promise<void> {
-    const db = await this.client.open();
+    let db: IDBDatabase | null = null;
 
-    return new Promise((resolve, reject) => {
-      const transaction = db.transaction([this.config.storeName], 'readwrite');
-      const store = transaction.objectStore(this.config.storeName);
-      const request = store.add(photo);
+    try {
+      db = await this.client.open();
 
-      request.onsuccess = () => {
-        this.client.close(db);
-        resolve();
-      };
-      request.onerror = () => {
-        this.client.close(db);
-        reject(request.error);
-      };
-    });
+      return new Promise((resolve, reject) => {
+        const transaction = db.transaction([this.config.storeName], 'readwrite');
+        const store = transaction.objectStore(this.config.storeName);
+        const request = store.add(photo);
+
+        request.onsuccess = () => {
+          resolve();
+        };
+        request.onerror = () => {
+          const error = request.error;
+          if (error?.name === 'QuotaExceededError') {
+            reject(new Error('저장 공간이 부족합니다. 일부 사진을 삭제하거나 브라우저 저장 공간을 확보해주세요.'));
+          } else {
+            reject(error ?? new Error('사진 저장에 실패했습니다.'));
+          }
+        };
+
+        transaction.oncomplete = () => {
+          if (db) this.client.close(db);
+          resolve();
+        };
+
+        transaction.onerror = () => {
+          if (db) this.client.close(db);
+          reject(transaction.error ?? new Error('트랜잭션 오류'));
+        };
+      });
+    } catch (error) {
+      if (db) this.client.close(db);
+      throw error;
+    }
   }
 
   async findAll(): Promise<readonly Photo[]> {

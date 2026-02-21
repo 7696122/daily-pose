@@ -1,7 +1,7 @@
 import { useState, useRef } from 'react';
 import type { MouseEvent, TouchEvent } from 'react';
 import { X } from 'lucide-react';
-import type { Photo } from '../../types';
+import type { Photo } from '../../core/types';
 import { IconButton } from '../atoms/IconButton';
 import { useLanguageStore } from '../../stores/useLanguageStore';
 import { t } from '../../lib/i18n';

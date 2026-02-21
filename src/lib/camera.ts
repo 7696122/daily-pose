@@ -23,7 +23,7 @@ export const capturePhoto = (
   photoCaptureServiceInstance.capture(videoElement, {
     aspectRatio,
     facingMode,
-    quality: 0.95,
+    quality: 0.8, // 품질 낮춤으로 저장 공간 절약
   } as CaptureOptions);
 
 // Export singleton instances for direct use

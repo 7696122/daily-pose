@@ -2,12 +2,12 @@
   "name": "Daily Pose",
   "short_name": "DailyPose",
   "description": "매일 동일한 포즈로 사진을 찍어 변화를 기록하는 앱",
-  "start_url": "/",
-  "display": "standalone",
+  "start_url": "/?source=pwa",
+  "display": "fullscreen",
   "display_override": ["fullscreen", "standalone", "minimal-ui"],
   "background_color": "#000000",
   "theme_color": "#000000",
-  "orientation": "portrait-primary",
+  "orientation": "portrait",
   "scope": "/",
   "icons": [
     {

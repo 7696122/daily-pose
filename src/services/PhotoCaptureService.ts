@@ -8,7 +8,11 @@ import {
   applyHorizontalFlip,
   canvasToDataURL,
   getVideoDimensions,
+  limitDimensions,
 } from '../lib/utils/canvas.utils';
+
+// Maximum image dimension to reduce storage size
+const MAX_IMAGE_DIMENSION = 1920; // Full HD
 
 /**
  * Photo Capture Service
@@ -20,23 +24,30 @@ export class PhotoCaptureService {
 
     const crop = calculateCropRegion(videoDimensions, options.aspectRatio);
 
-    const canvas = createCanvas({ width: crop.width, height: crop.height });
+    // Limit output dimensions to reduce storage size
+    const limitedDimensions = limitDimensions(
+      { width: crop.width, height: crop.height },
+      MAX_IMAGE_DIMENSION
+    );
+
+    const canvas = createCanvas(limitedDimensions);
     const context = getCanvasContext(canvas);
 
     if (options.facingMode === 'user') {
-      this.captureWithMirror(video, context, videoDimensions, crop);
+      this.captureWithMirror(video, context, videoDimensions, crop, limitedDimensions);
     } else {
-      drawImageFromVideo(context, video, crop, { width: crop.width, height: crop.height });
+      drawImageFromVideo(context, video, crop, limitedDimensions);
     }
 
-    return canvasToDataURL(canvas, options.quality ?? 0.95);
+    return canvasToDataURL(canvas, options.quality ?? 0.8);
   }
 
   private captureWithMirror(
     video: HTMLVideoElement,
     context: CanvasRenderingContext2D,
     videoDimensions: { width: number; height: number },
-    crop: { x: number; y: number; width: number; height: number }
+    crop: { x: number; y: number; width: number; height: number },
+    destination: { width: number; height: number }
   ): void {
     const tempCanvas = createCanvas(videoDimensions);
     const tempContext = getCanvasContext(tempCanvas);
@@ -44,7 +55,7 @@ export class PhotoCaptureService {
     applyHorizontalFlip(tempContext, videoDimensions.width);
     tempContext.drawImage(video, 0, 0, videoDimensions.width, videoDimensions.height);
 
-    drawImageFromCanvas(context, tempCanvas, crop, { width: crop.width, height: crop.height });
+    drawImageFromCanvas(context, tempCanvas, crop, destination);
   }
 }
 

@@ -1,9 +1,9 @@
 import { useState, useRef, useEffect } from 'react';
-import { Trash2, Info, Globe, ChevronRight, Download, Upload, Bell, BellOff, Layers } from 'lucide-react';
+import { Trash2, Info, Globe, ChevronRight, Download, Upload, Bell, BellOff, Layers, RefreshCw } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { useNavigationStore, useGalleryStore, useProjectStore, useLanguageStore } from '../../stores';
 import { t } from '../../lib/i18n';
-import { clearDatabase } from '../../lib/indexedDB';
+import { clearDatabase, resetDatabase } from '../../lib/indexedDB';
 import { exportBackup, importBackup, validateBackupSize, getBackupInfo } from '../../lib/backup';
 import { savePhoto } from '../../lib/indexedDB';
 import {
@@ -62,6 +62,22 @@ export const SettingsPage = () => {
       setPhotos([]);
     } catch {
       alert(t('deleteAllError', language));
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const handleResetDatabase = async () => {
+    if (!confirm('데이터베이스를 초기화하시겠습니까?\n\n모든 데이터가 삭제되고 앱이 초기 상태로 돌아갑니다.')) return;
+
+    setIsDeleting(true);
+    try {
+      await resetDatabase();
+      setPhotos([]);
+      alert('데이터베이스가 초기화되었습니다. 페이지를 새로고침해주세요.');
+      setTimeout(() => window.location.reload(), 1000);
+    } catch (error) {
+      alert(`초기화 실패: ${error instanceof Error ? error.message : String(error)}`);
     } finally {
       setIsDeleting(false);
     }
@@ -267,6 +283,14 @@ export const SettingsPage = () => {
           value: `${photos.length}${t('photos', language)}`,
           danger: true,
           onClick: handleDeleteAll,
+        },
+        {
+          icon: RefreshCw,
+          iconColor: 'text-orange-400',
+          label: 'DB 초기화',
+          value: '저장 오류 시',
+          danger: true,
+          onClick: handleResetDatabase,
         },
       ],
     },

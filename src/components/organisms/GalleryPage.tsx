@@ -2,12 +2,11 @@ import { useState } from 'react';
 import { Camera, Download, Play, Trash2, Settings, X, GitCompare, Edit, MessageSquare, Sparkles } from 'lucide-react';
 import { useNavigationStore, useGalleryStore, useLanguageStore } from '../../stores';
 import { t } from '../../lib/i18n';
-import type { Photo } from '../../types';
+import type { Photo, PhotoMetadata } from '../../core/types';
 import { deletePhoto, clearDatabase, updatePhoto } from '../../lib/indexedDB';
 import { downloadTimelapse, createTimelapse, type InterpolationMode } from '../../lib/timelapse';
 import { IconButton } from '../atoms';
 import { GalleryGrid, TimelapsePlayer, CalendarHeatmap, BeforeAfterSlider, PhotoEditor, PhotoMetadataEditor } from '../molecules';
-import type { PhotoMetadata as PhotoMetadataType } from '../../core/types';
 
 export const GalleryPage = () => {
   const { photos, setPhotos, deletePhoto: deletePhotoFromStore } = useGalleryStore();
@@ -113,7 +112,7 @@ export const GalleryPage = () => {
   };
 
   // 메타데이터 저장
-  const handleMetadataSave = async (metadata: PhotoMetadataType) => {
+  const handleMetadataSave = async (metadata: PhotoMetadata) => {
     if (!editingMetadata) return;
 
     try {

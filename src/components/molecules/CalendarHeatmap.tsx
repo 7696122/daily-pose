@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { CalendarDay } from '../atoms/CalendarDay';
 import { getDaysFromFirstPhoto, groupPhotosByDate, formatDateKey } from '../../lib/utils/date.utils';
-import type { Photo } from '../../types';
+import type { Photo } from '../../core/types';
 
 interface CalendarHeatmapProps {
   photos: readonly Photo[];

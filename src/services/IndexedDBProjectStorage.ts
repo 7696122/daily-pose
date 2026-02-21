@@ -58,7 +58,7 @@ export class IndexedDBProjectStorage implements IProjectStorage {
   constructor(dbName?: string) {
     this.config = {
       name: dbName ?? import.meta.env.VITE_DB_NAME ?? 'DailyPoseDB',
-      version: 3,
+      version: 4,  // Match IndexedDBPhotoStorage version
       storeName: 'projects',
     };
     this.client = new IndexedDBProjectClient(this.config);
